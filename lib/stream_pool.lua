@@ -5,7 +5,7 @@ StreamPool.__index = StreamPool
 
 local Stream = include("lib/stream")
 
-local MAX_STREAMS = 4
+local MAX_STREAMS = 8
 
 function StreamPool.new(num_streams)
     local sp = {}
@@ -58,8 +58,8 @@ function StreamPool:update()
     for i, s in ipairs(self.streams_) do
         s:update()
         if s:is_dead() then
-            table.insert(self.free_, s)
             table.insert(dead_idxs, i)
+            table.insert(self.free_, s)
         end
     end
     for _, idx in ipairs(dead_idxs) do

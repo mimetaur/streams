@@ -14,6 +14,8 @@ local arcify = Arcify.new(my_arc, false)
 -- script vars
 local clock = {}
 local spawn_clock = {}
+local spawn_counter = 1
+local spawn_rate = 10
 
 local function update()
     local w = params:get("wind")
@@ -23,8 +25,12 @@ local function update()
 end
 
 local function spawn()
-    local d = math.random(10, 100)
-    sp:spawn_only_dur(d)
+    spawn_counter = spawn_counter + 1
+    if spawn_counter > spawn_rate then
+        local d = math.random(10, 100)
+        sp:spawn_only_dur(d)
+        spawn_counter = 0
+    end
 end
 
 function init()
@@ -33,7 +39,7 @@ function init()
     clock = metro.init(update, 1 / 15, -1)
     clock:start()
 
-    spawn_clock = metro.init(spawn, 1, -1)
+    spawn_clock = metro.init(spawn, 0.1, -1)
     spawn_clock:start()
 
     params:add {
@@ -41,7 +47,10 @@ function init()
         id = "wind",
         name = "wind amount",
         controlspec = controlspec.new(0, 5, "lin", 0.05, 0.05),
-        action = function()
+        action = function(value)
+            local iv = 5 - value
+            local scaled = util.linlin(0, 5, 1, 15, iv)
+            spawn_rate = scaled
             arcify:redraw()
         end
     }

@@ -23,7 +23,12 @@ local function emit(self)
 
     engine.grain_dur(self.smoothness_)
     engine.density(self.density_)
-    engine.dur(self.duration_)
+
+    local w = params:get("wind")
+    local iw = 5 - w
+    local d = util.linlin(0, 5, 0.3, 2, iw)
+
+    engine.dur(d)
     local inv_num = 1 / self:num_streams()
     local amp_val = inv_num * 0.8
     engine.amp(amp_val)
@@ -55,10 +60,10 @@ function Stream.new(pool, idx)
     s.pool_ = pool
     s.idx_ = idx or 0
 
-    local function emit_callback()
-        emit(s)
-    end
-    s.on_emit_ = metro.init(emit_callback, 0.1, 1)
+    -- local function emit_callback()
+    --     emit(s)
+    -- end
+    -- s.on_emit_ = metro.init(emit_callback, 0.1, 1)
 
     setmetatable(s, Stream)
     return s
@@ -81,7 +86,7 @@ function Stream:update()
     self.x_ = self.x_ + self.vel_x_
     self.y_ = self.y_ + self.vel_y_
 
-    if (self.x_ + self.w_) < 0 then
+    if self.x_ < -10 then
         self:die()
     end
 end
@@ -107,7 +112,8 @@ function Stream:reset(x, y, w, h, density, smoothness)
     self.duration_ = util.linlin(WIDTH_UNIT, WIDTH_UNIT * 8, 1, 4, self.w_)
 
     self.is_dead_ = false
-    self.on_emit_:start()
+
+    -- self.on_emit_:start(scaled)
 end
 
 function Stream:set_duration(dur)
@@ -135,9 +141,9 @@ function Stream:draw()
 end
 
 function Stream:die()
+    emit(self)
     self.is_dead_ = true
-    -- silence(self)
-    self.on_emit_:stop()
+    -- self.on_emit_:stop()
 end
 
 function Stream:is_dead()
