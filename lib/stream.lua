@@ -16,6 +16,7 @@ local function emit(self)
         return
     end
 
+    -- sound parameters
     local inv_y = 64 - self.y_
     local cf = util.linexp(0, 64, 100, 1400, inv_y)
     local fr = util.linlin(HEIGHT_UNIT, HEIGHT_UNIT * 4, 5, 100, self.h_)
@@ -28,9 +29,16 @@ local function emit(self)
     engine.amp(amp_val)
     engine.hz_range(fr)
     engine.hz(cf)
+
+    -- gate on
+    -- engine.note_on(self.idx_)
 end
 
-function Stream.new(pool)
+local function silence(self)
+    -- engine.note_off(self.idx_)
+end
+
+function Stream.new(pool, idx)
     local s = {}
     s.x_ = 0
     s.y_ = 0
@@ -45,6 +53,7 @@ function Stream.new(pool)
     s.duration_ = 0
     s.is_dead_ = false
     s.pool_ = pool
+    s.idx_ = idx or 0
 
     local function emit_callback()
         emit(s)
@@ -127,6 +136,7 @@ end
 
 function Stream:die()
     self.is_dead_ = true
+    -- silence(self)
     self.on_emit_:stop()
 end
 

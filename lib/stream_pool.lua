@@ -15,7 +15,7 @@ function StreamPool.new(num_streams)
     local num = num_streams or MAX_STREAMS
 
     for i = 1, num do
-        local s = Stream.new(sp)
+        local s = Stream.new(sp, i)
         table.insert(sp.free_, s)
     end
 
@@ -47,10 +47,15 @@ function StreamPool:spawn_only_dur(duration)
     end
 end
 
+function StreamPool:apply_force(force_x, force_y)
+    for i, s in ipairs(self.streams_) do
+        s:apply_force(force_x, force_y)
+    end
+end
+
 function StreamPool:update()
     local dead_idxs = {}
     for i, s in ipairs(self.streams_) do
-        s:apply_force(-0.05, 0)
         s:update()
         if s:is_dead() then
             table.insert(self.free_, s)

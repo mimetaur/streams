@@ -8,13 +8,16 @@ local StreamPool = include("lib/stream_pool")
 local sp = {}
 
 local Arcify = include("arcify/lib/arcify")
-local arcify = Arcify.new()
+local my_arc = arc.connect()
+local arcify = Arcify.new(my_arc, false)
 
 -- script vars
 local clock = {}
 local spawn_clock = {}
 
 local function update()
+    local w = params:get("wind")
+    sp:apply_force(-w, 0)
     sp:update()
     redraw()
 end
@@ -27,18 +30,26 @@ end
 function init()
     sp = StreamPool.new()
 
-    clock = metro.init(update, 1 / 25, -1)
+    clock = metro.init(update, 1 / 15, -1)
     clock:start()
 
     spawn_clock = metro.init(spawn, 1, -1)
     spawn_clock:start()
 
-    -- arcify:register("release_mult", 1.0)
-    -- arcify:register("max_dist", 1.0)
-    -- arcify:register("num_walkers", 0.1)
-    -- arcify:register("speed", 1.0)
-    -- arcify:add_params()
+    params:add {
+        type = "control",
+        id = "wind",
+        name = "wind amount",
+        controlspec = controlspec.new(0, 5, "lin", 0.05, 0.05),
+        action = function()
+            arcify:redraw()
+        end
+    }
 
+    arcify:register("wind", 0.01)
+    arcify:add_params()
+
+    -- TODO enable this one params are semi-stable
     -- params:default()
 end
 
