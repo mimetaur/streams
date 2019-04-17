@@ -15,8 +15,6 @@ local function emit(self)
     if self.is_dead_ then
         return
     end
-    print("emitting")
-    print("num streams: " .. self:num_streams())
 
     local inv_y = 64 - self.y_
     local cf = util.linexp(0, 64, 100, 1400, inv_y)
@@ -27,7 +25,6 @@ local function emit(self)
     engine.dur(self.duration_)
     local inv_num = 1 / self:num_streams()
     local amp_val = inv_num * 0.8
-    print("Amp: " .. amp_val)
     engine.amp(amp_val)
     engine.hz_range(fr)
     engine.hz(cf)
