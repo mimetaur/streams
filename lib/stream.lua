@@ -74,6 +74,27 @@ function Stream:apply_force(force_x, force_y)
     self.accel_y_ = self.accel_y_ + force_y
 end
 
+function Stream:apply_diffusion(diffusion_amount)
+    local density_diffusion = util.linlin(0, 1, 1, 25, diffusion_amount)
+    local d = self.density_ - density_diffusion
+    if d < 0 then
+        self:die()
+    else
+        self.density_ = d
+    end
+
+    local size_diffusion = diffusion_amount * 0.1
+    local h = util.round(self.h_ + (self.h_ * size_diffusion), 1.0)
+    local w = util.round(self.w_ + (self.w_ * size_diffusion), 1.0)
+
+    if h > 32 or w > 64 then
+        self:die()
+    else
+        self.h_ = h
+        self.w_ = w
+    end
+end
+
 function Stream:update()
     if self.is_dead_ then
         return

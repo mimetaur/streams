@@ -16,11 +16,13 @@ local clock = {}
 local spawn_clock = {}
 local spawn_counter = 1
 local spawn_rate = 10
+local diffusion_rate = 0
 
 local function update()
     local w = params:get("wind")
     sp:apply_force(-w, 0)
     sp:update()
+    sp:apply_diffusion(diffusion_rate)
     redraw()
 end
 
@@ -55,7 +57,18 @@ function init()
         end
     }
 
+    params:add {
+        type = "control",
+        id = "diffusion",
+        name = "diffusion rate",
+        controlspec = controlspec.new(0, 1, "lin", diffusion_rate, 0.01),
+        action = function(value)
+            diffusion_rate = value
+        end
+    }
+
     arcify:register("wind", 0.01)
+    arcify:register("diffusion", 0.01)
     arcify:add_params()
 
     -- TODO enable this one params are semi-stable

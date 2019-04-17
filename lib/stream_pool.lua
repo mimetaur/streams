@@ -48,8 +48,14 @@ function StreamPool:spawn_only_dur(duration)
 end
 
 function StreamPool:apply_force(force_x, force_y)
-    for i, s in ipairs(self.streams_) do
+    for _, s in ipairs(self.streams_) do
         s:apply_force(force_x, force_y)
+    end
+end
+
+function StreamPool:apply_diffusion(diffusion_amount)
+    for _, s in ipairs(self.streams_) do
+        s:apply_diffusion(diffusion_amount)
     end
 end
 
