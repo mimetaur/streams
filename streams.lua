@@ -38,7 +38,7 @@ end
 function init()
     sp = StreamPool.new()
 
-    clock = metro.init(update, 1 / 15, -1)
+    clock = metro.init(update, 1 / 20, -1)
     clock:start()
 
     spawn_clock = metro.init(spawn, 0.1, -1)

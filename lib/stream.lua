@@ -24,11 +24,13 @@ local function emit(self)
     engine.grain_dur(self.smoothness_)
     engine.density(self.density_)
 
+    local dur = util.linlin(WIDTH_UNIT, WIDTH_UNIT * 8, 1, 4, self.w_)
     local w = params:get("wind")
     local iw = 5 - w
-    local d = util.linlin(0, 5, 0.3, 2, iw)
-
+    local mod = util.linlin(0, 5, 0.15, 1.3, iw)
+    local d = dur * mod
     engine.dur(d)
+
     local inv_num = 1 / self:num_streams()
     local amp_val = inv_num * 0.8
     engine.amp(amp_val)
@@ -83,7 +85,7 @@ function Stream:apply_diffusion(diffusion_amount)
         self.density_ = d
     end
 
-    local size_diffusion = diffusion_amount * 0.1
+    local size_diffusion = diffusion_amount * 0.05
     local h = util.round(self.h_ + (self.h_ * size_diffusion), 1.0)
     local w = util.round(self.w_ + (self.w_ * size_diffusion), 1.0)
 
