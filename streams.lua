@@ -17,12 +17,17 @@ local spawn_clock = {}
 local spawn_counter = 1
 local spawn_rate = 10
 local diffusion_rate = 0
+local gravity = 0
 
 local function update()
     local w = params:get("wind")
     sp:apply_force(-w, 0)
-    sp:update()
+
+    sp:apply_force(0, gravity)
+
     sp:apply_diffusion(diffusion_rate)
+    sp:update()
+
     redraw()
 end
 
@@ -67,12 +72,23 @@ function init()
         end
     }
 
+    params:add {
+        type = "control",
+        id = "gravity",
+        name = "gravity amount",
+        controlspec = controlspec.new(-0.5, 0.5, "lin", 0, 0.01),
+        action = function(value)
+            gravity = value * 0.1
+        end
+    }
+
     arcify:register("wind", 0.01)
     arcify:register("diffusion", 0.01)
+    arcify:register("gravity", 0.01)
     arcify:add_params()
 
     -- TODO enable this one params are semi-stable
-    -- params:default()
+    params:default()
 end
 
 function redraw()

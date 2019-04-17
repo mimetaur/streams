@@ -18,8 +18,7 @@ local function emit(self)
 
     -- sound parameters
     local inv_y = 64 - self.y_
-    local cf = util.linexp(0, 64, 100, 1400, inv_y)
-    local fr = util.linlin(HEIGHT_UNIT, HEIGHT_UNIT * 4, 5, 100, self.h_)
+    local cf = util.linexp(0, 64, 120, 1400, inv_y)
 
     engine.grain_dur(self.smoothness_)
     engine.density(self.density_)
@@ -34,6 +33,8 @@ local function emit(self)
     local inv_num = 1 / self:num_streams()
     local amp_val = inv_num * 0.8
     engine.amp(amp_val)
+
+    local fr = util.linlin(HEIGHT_UNIT, HEIGHT_UNIT * 4, 5, 100, self.h_)
     engine.hz_range(fr)
     engine.hz(cf)
 
@@ -109,7 +110,7 @@ function Stream:update()
     self.x_ = self.x_ + self.vel_x_
     self.y_ = self.y_ + self.vel_y_
 
-    if self.x_ < -10 then
+    if self.x_ < -10 or self.y_ > 70 or self.y_ < -10 then
         self:die()
     end
 end
