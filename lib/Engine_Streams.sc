@@ -14,7 +14,7 @@ Engine_Streams : CroneEngine {
 	var grain_dur = 0.01;
 	var width = 1.0;
 
-	var num_modulators = 2;
+	var num_modulators = 3;
 	var modulators;
 	var modulator_outs;
 
