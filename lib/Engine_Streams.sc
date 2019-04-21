@@ -1,10 +1,11 @@
-// Engine_SimpleSineGrainCloud
-// works at cloud level rather than individual grain
-// duration in ms, freq in hz
+// Engine_Streams
+// clouds of sine grains
+// duration in seconds, freq in hz
 // by @mimetaur
 
-Engine_SimpleSineGrainCloud : CroneEngine {
+Engine_Streams : CroneEngine {
 	var synthGroup;
+
 	var freq = 440;
 	var freq_range = 0;
 	var density = 100;
@@ -12,8 +13,9 @@ Engine_SimpleSineGrainCloud : CroneEngine {
 	var dur = 1.0;
 	var grain_dur = 0.01;
 	var width = 1.0;
-	var lfo;
-	var lfo_out;
+
+	var brownian;
+	var brownian_out;
 
 
 	*new { arg context, doneCallback;
@@ -24,11 +26,11 @@ Engine_SimpleSineGrainCloud : CroneEngine {
 		// Output groups
 
 		synthGroup = ParGroup.tail(context.xg);
-		lfo_out = Bus.control(context.server);
+		brownian_out = Bus.control(context.server);
 
 		// SynthDefs
 
-		SynthDef(\SimpleSineGrainCloud, {
+		SynthDef(\SineGrainCloud, {
 			arg out, density = density, freq = freq, freq_range = freq_range, amp = amp, dur = dur, grain_dur = grain_dur, width = width;
 
 			var gd_ = grain_dur.clip(0.001, 0.25);
@@ -45,34 +47,35 @@ Engine_SimpleSineGrainCloud : CroneEngine {
 			Out.ar(out, Splay.ar(sig, width));
 		}).add;
 
-		SynthDef(\LfoController, {
-			arg out, freq = 10, amp = 1.0;
-			var sin = SinOsc.kr(freq: freq);
-			var lfo = sin * amp;
-			Out.kr(out, lfo);
+		SynthDef(\BrownianGenerator, {
+			arg out, freq = 20, dev = 1.0, amp = 1.0;
+			var gen = LFOBrownNoise1.kr(freq: freq, dev: dev);
+			var scaled_gen = gen * amp;
+			Out.kr(out, scaled_gen);
 		}).add;
+
 
 		context.server.sync;
 
-		lfo = Synth.new(\LfoController, [\out, lfo_out], target:synthGroup);
+		brownian = Synth.new(\BrownianGenerator, [\out, brownian_out], target:synthGroup);
 
 		context.server.sync;
 
 		// Commands
 
-		this.addCommand("lfo_hz", "f", { arg msg;
+		this.addCommand("brownian_hz", "f", { arg msg;
 			var val = msg[1];
-			lfo.set(\freq, val);
+			brownian.set(\freq, val);
 		});
 
-		this.addCommand("lfo_amount", "f", { arg msg;
+		this.addCommand("brownian_amount", "f", { arg msg;
 			var val = msg[1];
-			lfo.set(\amp, val);
+			brownian.set(\amp, val);
 		});
 
 		this.addCommand("hz", "f", { arg msg;
 			var val = msg[1];
-			Synth(\SimpleSineGrainCloud, [\out, context.out_b, \freq, val, \amp, amp, \dur, dur, \freq_range, freq_range, \density, density, \grain_dur, grain_dur, \width, width], target:synthGroup);
+			Synth(\SineGrainCloud, [\out, context.out_b, \freq, val, \amp, amp, \dur, dur, \freq_range, freq_range, \density, density, \grain_dur, grain_dur, \width, width], target:synthGroup);
 		});
 
 		this.addCommand("hz_range", "f", { arg msg;
@@ -101,8 +104,8 @@ Engine_SimpleSineGrainCloud : CroneEngine {
 
 		// Polls
 
-		this.addPoll(("lfo_out").asSymbol, {
-			var val = lfo_out.getSynchronous;
+		this.addPoll(("brownian_out").asSymbol, {
+			var val = brownian_out.getSynchronous;
 			val
 		});
 
