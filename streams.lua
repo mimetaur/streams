@@ -24,6 +24,10 @@ local spawn_rate = 10
 local diffusion_rate = 0
 local gravity = 0
 
+local function lerp(a, b, t)
+    return a + (b - a) * t
+end
+
 local function update()
     local w = params:get("wind")
     sp:apply_force(-w, 0)
@@ -89,60 +93,83 @@ function init()
         end
     }
 
-    params:add {
-        type = "control",
-        id = "mod_1_to_gravity",
-        name = "Mod 1 Gravity Amount",
-        controlspec = controlspec.new(0, 1, "lin", 0.01, 0)
-    }
-
-    params:add {
-        type = "control",
-        id = "mod_1_to_wind",
-        name = "Mod 1 Wind Amount",
-        controlspec = controlspec.new(0, 1, "lin", 0.01, 0)
-    }
-
     modulators.create_params(true, true)
+    modulators.create_polls()
+
+    params:add_separator()
+    for i = 1, modulators.NUM_MODULATORS do
+        params:add {
+            type = "control",
+            id = "mod_" .. i .. "_to_gravity",
+            name = "Mod " .. i .. " Gravity Amount",
+            controlspec = controlspec.new(0, 1, "lin", 0.01, 0)
+        }
+
+        params:add {
+            type = "control",
+            id = "mod_" .. i .. "_to_wind",
+            name = "Mod " .. i .. " Wind Amount",
+            controlspec = controlspec.new(0, 1, "lin", 0.01, 0)
+        }
+
+        params:add {
+            type = "control",
+            id = "mod_" .. i .. "_rate",
+            name = "Mod " .. i .. " Callback Rate",
+            controlspec = controlspec.new(0.5, 10, "lin", 0.5, 1),
+            action = function(value)
+                modulators.set_time(1, value)
+            end
+        }
+    end
 
     arcify:register("wind", 0.05)
     arcify:register("diffusion", 0.01)
     arcify:register("gravity", 0.01)
+
     arcify:register("mod_1_to_wind", 0.01)
     arcify:register("mod_1_to_gravity", 0.01)
+    arcify:register("mod_1_rate", 0.5)
 
     for i = 1, modulators.NUM_MODULATORS do
         arcify:register("mod_" .. i .. "_type")
         arcify:register("mod_" .. i .. "_hz")
+        arcify:register("mod_" .. i .. "_rate")
+        arcify:register("mod_" .. i .. "_to_wind")
+        arcify:register("mod_" .. i .. "_to_gravity")
     end
 
     arcify:add_params()
 
     params:default()
 
-    modulators.create_polls()
-
-    local function chaos_cb(val)
-        local function lerp(a, b, t)
-            return a + (b - a) * t
-        end
-
+    local function mod_callback(val, i)
         local old_gravity = params:get("gravity")
         local new_gravity = util.linlin(-1, 1, -0.15, 0.15, val)
-        local l_gravity = lerp(old_gravity, new_gravity, params:get("mod_1_to_gravity"))
+        local l_gravity = lerp(old_gravity, new_gravity, params:get("mod_" .. i .. "_to_gravity"))
 
         params:set("gravity", l_gravity)
 
         local old_wind = params:get("wind")
         local new_wind = util.linlin(-1, 1, -0.1, 0.1, val)
-        local l_wind = lerp(old_wind, new_wind, params:get("mod_1_to_wind"))
+        local l_wind = lerp(old_wind, new_wind, params:get("mod_" .. i .. "_to_gravity"))
 
         params:set("wind", l_wind)
     end
-    modulators.set_time(1, 1)
 
-    modulators.set_callback(1, chaos_cb)
+    local function mod_1_callback(val)
+        mod_callback(val, 1)
+    end
+    modulators.set_callback(1, mod_1_callback)
+    modulators.set_time(1, 1)
     modulators.start_poll(1)
+
+    local function mod_2_callback(val)
+        mod_callback(val, 2)
+    end
+    modulators.set_callback(2, mod_2_callback)
+    modulators.set_time(2, 1)
+    modulators.start_poll(2)
 end
 
 function key(n, z)
