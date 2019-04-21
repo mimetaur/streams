@@ -116,9 +116,10 @@ function Stream:update()
 end
 
 function Stream:reset(x, y, w, h, density, smoothness)
+    local p2 = util.linlin(-1, 1, 0, 1, modulators.update_poll(2))
     self.x_ = x or 130
-    self.y_ = y or math.ceil(math.random(8) * HEIGHT_UNIT)
-    self.h_ = h or math.ceil(math.random(4) * HEIGHT_UNIT)
+    self.y_ = y or util.round(p2 * 8 * HEIGHT_UNIT, 1.0)
+    self.h_ = h or util.round(p2 * 4 * HEIGHT_UNIT, 1.0)
     self.vel_x_ = 0
     self.vel_y_ = 0
     self.accel_x_ = 0

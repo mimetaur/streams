@@ -4,6 +4,8 @@
 engine.name = "Streams"
 
 -- dependencies
+modulators = include("lib/modulators")
+
 local StreamPool = include("lib/stream_pool")
 local sp = {}
 
@@ -56,7 +58,7 @@ function init()
         type = "control",
         id = "wind",
         name = "wind amount",
-        controlspec = controlspec.new(0, 5, "lin", 0.05, 0.05),
+        controlspec = controlspec.new(0, 5, "lin", 0.01, 0.05),
         action = function(value)
             local iv = 5 - value
             local scaled = util.linlin(0, 5, 1, 15, iv)
@@ -65,12 +67,11 @@ function init()
             billboard:display_param("wind", -1 * value)
         end
     }
-
     params:add {
         type = "control",
         id = "diffusion",
         name = "diffusion rate",
-        controlspec = controlspec.new(0, 1, "lin", diffusion_rate, 0.01),
+        controlspec = controlspec.new(0, 1, "lin", 0.01, diffusion_rate),
         action = function(value)
             diffusion_rate = value
             billboard:display_param("diffusion rate", value)
@@ -81,37 +82,72 @@ function init()
         type = "control",
         id = "gravity",
         name = "gravity amount",
-        controlspec = controlspec.new(-0.15, 0.15, "lin", 0, 0.01),
+        controlspec = controlspec.new(-0.15, 0.15, "lin", 0.01, 0),
         action = function(value)
             gravity = value
             billboard:display_param("gravity", util.round(gravity, 0.01))
         end
     }
 
+    params:add {
+        type = "control",
+        id = "mod_1_to_gravity",
+        name = "Mod 1 Gravity Amount",
+        controlspec = controlspec.new(0, 1, "lin", 0.01, 0)
+    }
+
+    params:add {
+        type = "control",
+        id = "mod_1_to_wind",
+        name = "Mod 1 Wind Amount",
+        controlspec = controlspec.new(0, 1, "lin", 0.01, 0)
+    }
+
+    modulators.create_params(true, true)
+
     arcify:register("wind", 0.05)
     arcify:register("diffusion", 0.01)
     arcify:register("gravity", 0.01)
+    arcify:register("mod_1_to_wind", 0.01)
+    arcify:register("mod_1_to_gravity", 0.01)
+
+    for i = 1, modulators.NUM_MODULATORS do
+        arcify:register("mod_" .. i .. "_type")
+        arcify:register("mod_" .. i .. "_hz")
+    end
+
     arcify:add_params()
 
     params:default()
 
-    p = poll.set("mod_1_out")
-    p.callback = function(val)
-        print("Mod 1 value: " .. val)
-    end
-    engine.mod_type(1, 1)
+    modulators.create_polls()
 
-    p2 = poll.set("mod_2_out")
-    p2.callback = function(val)
-        print("Mod 2 value: " .. val)
+    local function chaos_cb(val)
+        local function lerp(a, b, t)
+            return a + (b - a) * t
+        end
+
+        local old_gravity = params:get("gravity")
+        local new_gravity = util.linlin(-1, 1, -0.15, 0.15, val)
+        local l_gravity = lerp(old_gravity, new_gravity, params:get("mod_1_to_gravity"))
+
+        params:set("gravity", l_gravity)
+
+        local old_wind = params:get("wind")
+        local new_wind = util.linlin(-1, 1, -0.1, 0.1, val)
+        local l_wind = lerp(old_wind, new_wind, params:get("mod_1_to_wind"))
+
+        params:set("wind", l_wind)
     end
-    engine.mod_type(2, 7)
+    modulators.set_time(1, 1)
+
+    modulators.set_callback(1, chaos_cb)
+    modulators.start_poll(1)
 end
 
 function key(n, z)
     if n == 2 and z == 1 then
-        p:update()
-        p2:update()
+        print(modulators.update_poll(1))
     end
 
     redraw()

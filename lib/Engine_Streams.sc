@@ -14,7 +14,7 @@ Engine_Streams : CroneEngine {
 	var grain_dur = 0.01;
 	var width = 1.0;
 
-	var num_modulators = 3;
+	var num_modulators = 2;
 	var modulators;
 	var modulator_outs;
 
@@ -52,16 +52,16 @@ Engine_Streams : CroneEngine {
 			var mod, mod_scaled, modulator_array;
 
 			modulator_array = [
-				SinOsc.kr(freq),
-				LFTri.kr(freq),
-				LFSaw.kr(freq).range(-1.0, 1.0),
-				LFPulse.kr(freq, mul: 2, add: -1),
-				LFNoise0.kr(freq),
-				LFBrownNoise1.kr(freq: freq, dev: aux),
-				A2K.kr(in: LorenzL.ar(freq: freq))
+				SinOsc.kr(freq).range(-1, 1),
+				LFTri.kr(freq).range(-1, 1),
+				LFSaw.kr(freq).range(-1, 1),
+				LFPulse.kr(freq, mul: 2, add: -1).range(-1, 1),
+				LFNoise0.kr(freq).range(-1, 1),
+				LFBrownNoise1.kr(freq: freq, dev: aux).range(-1, 1),
+				A2K.kr(in: LorenzL.ar(freq: freq)).range(-1, 1)
 			];
 
-			mod = Select.kr(type, modulator_array).range(-1.0, 1.0);
+			mod = Select.kr(type, modulator_array);
 			mod_scaled = Lag.kr(mod, lag) * amp;
 
 			Out.kr(out, mod_scaled);
