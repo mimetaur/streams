@@ -1,7 +1,7 @@
 -- Streams
 -- Granular Sine Streams
 
-engine.name = "SimpleSineGrainCloud"
+engine.name = "Streams"
 
 -- dependencies
 local StreamPool = include("lib/stream_pool")
@@ -21,6 +21,8 @@ local spawn_counter = 1
 local spawn_rate = 10
 local diffusion_rate = 0
 local gravity = 0
+
+local brownian_poll = false
 
 local function update()
     local w = params:get("wind")
@@ -95,15 +97,22 @@ function init()
 
     params:default()
 
-    p = poll.set("lfo_out")
+    p = poll.set("brownian_out")
     p.callback = function(val)
-        print("LFO value: " .. val)
+        print("Brownian value: " .. val)
     end
+    p.time = 0.25
+    p:start()
+    brownian_poll = true
 end
 
 function key(n, z)
     if n == 2 and z == 1 then
-        p:update()
+        if brownian_poll then
+            p:stop()
+        else
+            p:start()
+        end
     end
 
     redraw()
