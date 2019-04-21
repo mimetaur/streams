@@ -49,7 +49,7 @@ Engine_Streams : CroneEngine {
 
 		SynthDef(\BrownianGenerator, {
 			arg out, freq = 20, dev = 1.0, amp = 1.0;
-			var gen = LFOBrownNoise1.kr(freq: freq, dev: dev);
+			var gen = LFBrownNoise1.kr(freq: freq, dev: dev);
 			var scaled_gen = gen * amp;
 			Out.kr(out, scaled_gen);
 		}).add;
