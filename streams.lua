@@ -94,6 +94,19 @@ function init()
     arcify:add_params()
 
     params:default()
+
+    p = poll.set("lfo_out")
+    p.callback = function(val)
+        print("LFO value: " .. val)
+    end
+end
+
+function key(n, z)
+    if n == 2 and z == 1 then
+        p:update()
+    end
+
+    redraw()
 end
 
 function redraw()
