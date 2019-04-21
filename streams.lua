@@ -103,6 +103,7 @@ function init()
     end
     p.time = 0.25
     p:start()
+    engine.brownian_dev(0.1)
     brownian_poll = true
 end
 
@@ -113,6 +114,7 @@ function key(n, z)
         else
             p:start()
         end
+        brownian_poll = not brownian_poll
     end
 
     redraw()

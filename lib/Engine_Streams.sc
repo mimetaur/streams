@@ -68,6 +68,11 @@ Engine_Streams : CroneEngine {
 			brownian.set(\freq, val);
 		});
 
+		this.addCommand("brownian_dev", "f", { arg msg;
+			var val = msg[1];
+			brownian.set(\dev, val);
+		});
+
 		this.addCommand("brownian_amount", "f", { arg msg;
 			var val = msg[1];
 			brownian.set(\amp, val);
