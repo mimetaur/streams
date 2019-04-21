@@ -95,15 +95,23 @@ function init()
 
     params:default()
 
-    p = poll.set("mod_one_out")
+    p = poll.set("mod_1_out")
     p.callback = function(val)
-        print("Mod value: " .. val)
+        print("Mod 1 value: " .. val)
     end
+    engine.mod_type(1, 1)
+
+    p2 = poll.set("mod_2_out")
+    p2.callback = function(val)
+        print("Mod 2 value: " .. val)
+    end
+    engine.mod_type(2, 7)
 end
 
 function key(n, z)
     if n == 2 and z == 1 then
         p:update()
+        p2:update()
     end
 
     redraw()

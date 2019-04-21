@@ -14,8 +14,9 @@ Engine_Streams : CroneEngine {
 	var grain_dur = 0.01;
 	var width = 1.0;
 
-	var mod_one;
-	var mod_one_out;
+	var num_modulators = 2;
+	var modulators;
+	var modulator_outs;
 
 
 	*new { arg context, doneCallback;
@@ -26,7 +27,6 @@ Engine_Streams : CroneEngine {
 		// Output groups
 
 		synthGroup = ParGroup.tail(context.xg);
-		mod_one_out = Bus.control(context.server);
 
 		// SynthDefs
 
@@ -71,7 +71,8 @@ Engine_Streams : CroneEngine {
 
 		context.server.sync;
 
-		mod_one = Synth.new(\Modulator, [\out, mod_one_out], target:synthGroup);
+		modulator_outs = Array.fill(num_modulators, { arg i; Bus.control(context.server) });
+		modulators = Array.fill(num_modulators, { arg i; Synth.new(\Modulator, [\out, modulator_outs.at(i)], target:synthGroup); });
 
 		context.server.sync;
 
@@ -108,38 +109,45 @@ Engine_Streams : CroneEngine {
 
 		// Modulator Commands
 
-		this.addCommand("mod_one_hz", "f", { arg msg;
-			var val = msg[1];
-			mod_one.set(\freq, val);
+		this.addCommand("mod_hz", "if", { arg msg;
+			var i = msg[1] - 1;
+			var val = msg[2];
+			modulators.at(i).set(\freq, val);
 		});
 
-		this.addCommand("mod_one_amp", "f", { arg msg;
-			var val = msg[1];
-			mod_one.set(\amp, val);
+		this.addCommand("mod_amp", "if", { arg msg;
+			var i = msg[1] - 1;
+			var val = msg[2];
+			modulators.at(i).set(\amp, val);
 		});
 
-		this.addCommand("mod_one_lag", "f", { arg msg;
-			var val = msg[1];
-			mod_one.set(\lag, val);
+		this.addCommand("mod_lag", "if", { arg msg;
+			var i = msg[1] - 1;
+			var val = msg[2];
+			modulators.at(i).set(\lag, val);
 		});
 
-		this.addCommand("mod_one_aux", "f", { arg msg;
-			var val = msg[1];
-			mod_one.set(\aux, val)
+		this.addCommand("mod_aux", "if", { arg msg;
+			var i = msg[1] - 1;
+			var val = msg[2];
+			modulators.at(i).set(\aux, val);
 		});
 
-		this.addCommand("mod_one_type", "i", { arg msg;
-			var val = msg[1] - 1;
-			mod_one.set(\type, val)
+		this.addCommand("mod_type", "ii", { arg msg;
+			var i = msg[1] - 1;
+			var val = msg[2] - 1;
+			modulators.at(i).set(\type, val);
 		});
 
 
 		// Polls
 
-		this.addPoll(("mod_one_out").asSymbol, {
-			var val = mod_one_out.getSynchronous;
-			val
+		modulator_outs.do({ arg a_modulator, i;
+			var num = i + 1;
+			this.addPoll(("mod_" ++ num ++ "_out").asSymbol, {
+				var val = a_modulator.getSynchronous;
+				val
+			});
 		});
-
 	}
 }
