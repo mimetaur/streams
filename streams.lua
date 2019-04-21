@@ -93,7 +93,6 @@ function init()
     arcify:register("gravity", 0.01)
     arcify:add_params()
 
-    -- TODO enable this one params are semi-stable
     params:default()
 end
 
