@@ -53,15 +53,15 @@ Engine_Streams : CroneEngine {
 
 		SynthDef(\BrownianGenerator, {
 			arg out, freq = 10, dev = 1.0, amp = 1.0;
-			var gen = LFBrownNoise1.kr(freq: freq, dev: dev);
+			var gen = LFBrownNoise1.kr(freq: freq, dev: dev).range(-1.0, 1.0);
 			var scaled_gen = gen * amp;
 			Out.kr(out, scaled_gen);
 		}).add;
 
 		SynthDef(\LorenzGenerator, {
-			arg out, freq = 10, amp = 1.0;
-			var audio_gen = LorenzL.ar(freq: freq);
-			var gen = A2K(in: audio_gen);
+			arg out, freq = 10, lag = 0.1, amp = 1.0;
+			var audio_gen = Lag.ar(LorenzL.ar(freq: freq), lag);
+			var gen = A2K(in: audio_gen).range(-1.0, 1.0);
 			var scaled_gen = gen * amp;
 			Out.kr(out, scaled_gen);
 		}).add;
