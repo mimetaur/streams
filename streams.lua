@@ -22,8 +22,6 @@ local spawn_rate = 10
 local diffusion_rate = 0
 local gravity = 0
 
-local brownian_poll = false
-
 local function update()
     local w = params:get("wind")
     sp:apply_force(-w, 0)
@@ -97,24 +95,25 @@ function init()
 
     params:default()
 
-    p = poll.set("brownian_out")
-    p.callback = function(val)
+    bp = poll.set("brownian_out")
+    bp.callback = function(val)
         print("Brownian value: " .. val)
     end
-    p.time = 0.25
-    p:start()
     engine.brownian_dev(0.1)
-    brownian_poll = true
+
+    lp = poll.set("lorenz_out")
+    lp.callback = function(val)
+        print("Lorenz value: " .. val)
+    end
 end
 
 function key(n, z)
     if n == 2 and z == 1 then
-        if brownian_poll then
-            p:stop()
-        else
-            p:start()
-        end
-        brownian_poll = not brownian_poll
+        bp:update()
+    end
+
+    if n == 3 and z == 1 then
+        lp:update()
     end
 
     redraw()

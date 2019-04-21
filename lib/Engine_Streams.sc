@@ -17,6 +17,9 @@ Engine_Streams : CroneEngine {
 	var brownian;
 	var brownian_out;
 
+	var lorenz;
+	var lorenz_out;
+
 
 	*new { arg context, doneCallback;
 		^super.new(context, doneCallback);
@@ -27,6 +30,7 @@ Engine_Streams : CroneEngine {
 
 		synthGroup = ParGroup.tail(context.xg);
 		brownian_out = Bus.control(context.server);
+		lorenz_out = Bus.control(context.server);
 
 		// SynthDefs
 
@@ -48,8 +52,16 @@ Engine_Streams : CroneEngine {
 		}).add;
 
 		SynthDef(\BrownianGenerator, {
-			arg out, freq = 20, dev = 1.0, amp = 1.0;
+			arg out, freq = 10, dev = 1.0, amp = 1.0;
 			var gen = LFBrownNoise1.kr(freq: freq, dev: dev);
+			var scaled_gen = gen * amp;
+			Out.kr(out, scaled_gen);
+		}).add;
+
+		SynthDef(\LorenzGenerator, {
+			arg out, freq = 10, amp = 1.0;
+			var audio_gen = LorenzL.ar(freq: freq);
+			var gen = A2K(in: audio_gen);
 			var scaled_gen = gen * amp;
 			Out.kr(out, scaled_gen);
 		}).add;
@@ -58,6 +70,7 @@ Engine_Streams : CroneEngine {
 		context.server.sync;
 
 		brownian = Synth.new(\BrownianGenerator, [\out, brownian_out], target:synthGroup);
+		lorenz = Synth.new(\LorenzGenerator, [\out, lorenz_out], target:synthGroup);
 
 		context.server.sync;
 
@@ -76,6 +89,17 @@ Engine_Streams : CroneEngine {
 		this.addCommand("brownian_amount", "f", { arg msg;
 			var val = msg[1];
 			brownian.set(\amp, val);
+		});
+
+
+		this.addCommand("lorenz_hz", "f", { arg msg;
+			var val = msg[1];
+			lorenz.set(\freq, val);
+		});
+
+		this.addCommand("lorenz_amount", "f", { arg msg;
+			var val = msg[1];
+			lorenz.set(\amp, val);
 		});
 
 		this.addCommand("hz", "f", { arg msg;
@@ -110,6 +134,11 @@ Engine_Streams : CroneEngine {
 		// Polls
 
 		this.addPoll(("brownian_out").asSymbol, {
+			var val = brownian_out.getSynchronous;
+			val
+		});
+
+		this.addPoll(("lorenz_out").asSymbol, {
 			var val = brownian_out.getSynchronous;
 			val
 		});
