@@ -95,25 +95,15 @@ function init()
 
     params:default()
 
-    bp = poll.set("brownian_out")
-    bp.callback = function(val)
-        print("Brownian value: " .. val)
-    end
-    engine.brownian_dev(0.1)
-
-    lp = poll.set("lorenz_out")
-    lp.callback = function(val)
-        print("Lorenz value: " .. val)
+    p = poll.set("mod_one_out")
+    p.callback = function(val)
+        print("Mod value: " .. val)
     end
 end
 
 function key(n, z)
     if n == 2 and z == 1 then
-        bp:update()
-    end
-
-    if n == 3 and z == 1 then
-        lp:update()
+        p:update()
     end
 
     redraw()

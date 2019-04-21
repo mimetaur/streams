@@ -14,11 +14,8 @@ Engine_Streams : CroneEngine {
 	var grain_dur = 0.01;
 	var width = 1.0;
 
-	var brownian;
-	var brownian_out;
-
-	var lorenz;
-	var lorenz_out;
+	var mod_one;
+	var mod_one_out;
 
 
 	*new { arg context, doneCallback;
@@ -29,8 +26,7 @@ Engine_Streams : CroneEngine {
 		// Output groups
 
 		synthGroup = ParGroup.tail(context.xg);
-		brownian_out = Bus.control(context.server);
-		lorenz_out = Bus.control(context.server);
+		mod_one_out = Bus.control(context.server);
 
 		// SynthDefs
 
@@ -51,56 +47,35 @@ Engine_Streams : CroneEngine {
 			Out.ar(out, Splay.ar(sig, width));
 		}).add;
 
-		SynthDef(\BrownianGenerator, {
-			arg out, freq = 10, dev = 1.0, amp = 1.0;
-			var gen = LFBrownNoise1.kr(freq: freq, dev: dev).range(-1.0, 1.0);
-			var scaled_gen = gen * amp;
-			Out.kr(out, scaled_gen);
-		}).add;
+		SynthDef(\Modulator, {
+			arg out, freq = 5, amp = 1.0, lag = 0.1, aux = 1.0, type = 0;
+			var mod, mod_scaled, modulator_array;
 
-		SynthDef(\LorenzGenerator, {
-			arg out, freq = 10, lag = 0.1, amp = 1.0;
-			var audio_gen = Lag.ar(LorenzL.ar(freq: freq), lag);
-			var gen = A2K(in: audio_gen).range(-1.0, 1.0);
-			var scaled_gen = gen * amp;
-			Out.kr(out, scaled_gen);
+			modulator_array = [
+				SinOsc.kr(freq),
+				LFTri.kr(freq),
+				LFSaw.kr(freq).range(-1.0, 1.0),
+				LFPulse.kr(freq, mul: 2, add: -1),
+				LFNoise0.kr(freq),
+				LFBrownNoise1.kr(freq: freq, dev: aux),
+				A2K.kr(in: LorenzL.ar(freq: freq))
+			];
+
+			mod = Select.kr(type, modulator_array).range(-1.0, 1.0);
+			mod_scaled = Lag.kr(mod, lag) * amp;
+
+			Out.kr(out, mod_scaled);
+
 		}).add;
 
 
 		context.server.sync;
 
-		brownian = Synth.new(\BrownianGenerator, [\out, brownian_out], target:synthGroup);
-		lorenz = Synth.new(\LorenzGenerator, [\out, lorenz_out], target:synthGroup);
+		mod_one = Synth.new(\Modulator, [\out, mod_one_out], target:synthGroup);
 
 		context.server.sync;
 
-		// Commands
-
-		this.addCommand("brownian_hz", "f", { arg msg;
-			var val = msg[1];
-			brownian.set(\freq, val);
-		});
-
-		this.addCommand("brownian_dev", "f", { arg msg;
-			var val = msg[1];
-			brownian.set(\dev, val);
-		});
-
-		this.addCommand("brownian_amount", "f", { arg msg;
-			var val = msg[1];
-			brownian.set(\amp, val);
-		});
-
-
-		this.addCommand("lorenz_hz", "f", { arg msg;
-			var val = msg[1];
-			lorenz.set(\freq, val);
-		});
-
-		this.addCommand("lorenz_amount", "f", { arg msg;
-			var val = msg[1];
-			lorenz.set(\amp, val);
-		});
+		// Synth Engine Commands
 
 		this.addCommand("hz", "f", { arg msg;
 			var val = msg[1];
@@ -131,15 +106,38 @@ Engine_Streams : CroneEngine {
 			grain_dur = msg[1];
 		});
 
-		// Polls
+		// Modulator Commands
 
-		this.addPoll(("brownian_out").asSymbol, {
-			var val = brownian_out.getSynchronous;
-			val
+		this.addCommand("mod_one_hz", "f", { arg msg;
+			var val = msg[1];
+			mod_one.set(\freq, val);
 		});
 
-		this.addPoll(("lorenz_out").asSymbol, {
-			var val = brownian_out.getSynchronous;
+		this.addCommand("mod_one_amp", "f", { arg msg;
+			var val = msg[1];
+			mod_one.set(\amp, val);
+		});
+
+		this.addCommand("mod_one_lag", "f", { arg msg;
+			var val = msg[1];
+			mod_one.set(\lag, val);
+		});
+
+		this.addCommand("mod_one_aux", "f", { arg msg;
+			var val = msg[1];
+			mod_one.set(\aux, val)
+		});
+
+		this.addCommand("mod_one_type", "i", { arg msg;
+			var val = msg[1] - 1;
+			mod_one.set(\type, val)
+		});
+
+
+		// Polls
+
+		this.addPoll(("mod_one_out").asSymbol, {
+			var val = mod_one_out.getSynchronous;
 			val
 		});
 
