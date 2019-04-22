@@ -93,40 +93,7 @@ function init()
         end
     }
 
-    modulators.init(3, true, true, false)
-
-    params:add_separator()
-    for i = 1, modulators.num do
-        params:add {
-            type = "control",
-            id = "mod_" .. i .. "_to_gravity",
-            name = "Mod " .. i .. " Gravity Amount",
-            controlspec = controlspec.new(0, 1, "lin", 0.01, 0),
-            action = function(value)
-                billboard:display_param("Mod " .. i .. " to Gravity", value)
-            end
-        }
-
-        params:add {
-            type = "control",
-            id = "mod_" .. i .. "_to_wind",
-            name = "Mod " .. i .. " Wind Amount",
-            controlspec = controlspec.new(0, 1, "lin", 0.01, 0),
-            action = function(value)
-                billboard:display_param("Mod " .. i .. " to Wind", value)
-            end
-        }
-
-        params:add {
-            type = "control",
-            id = "mod_" .. i .. "_to_diffusion",
-            name = "Mod " .. i .. " Diffusion Amount",
-            controlspec = controlspec.new(0, 1, "lin", 0.01, 0),
-            action = function(value)
-                billboard:display_param("Mod " .. i .. " to Diffusion", value)
-            end
-        }
-    end
+    modulators.init(3, {"wind", "gravity", "diffusion"}, true, true, true, false)
 
     arcify:register("wind", 0.05)
     arcify:register("diffusion", 0.01)
@@ -134,9 +101,7 @@ function init()
 
     for i = 1, modulators.num do
         arcify:register("mod_" .. i .. "_hz", 0.1)
-        arcify:register("mod_" .. i .. "_to_wind", 0.01)
-        arcify:register("mod_" .. i .. "_to_gravity", 0.01)
-        arcify:register("mod_" .. i .. "_to_diffusion", 0.01)
+        arcify:register("mod_" .. i .. "_amount", 0.01)
     end
 
     arcify:add_params()
@@ -144,23 +109,33 @@ function init()
     params:default()
 
     local function mod_callback(val, i)
-        local old_gravity = params:get("gravity")
-        local new_gravity = util.linlin(-1, 1, -0.15, 0.15, val)
-        local l_gravity = lerp(old_gravity, new_gravity, params:get("mod_" .. i .. "_to_gravity"))
+        local param_idx = params:get("mod_" .. i .. "_param")
+        local current_modulator = modulators.params[param_idx]
+        local mod_amount = params:get("mod_" .. i .. "_amount")
 
-        params:set("gravity", l_gravity)
+        if current_modulator == "gravity" then
+            local old_gravity = params:get("gravity")
+            local new_gravity = util.linlin(-1, 1, -0.15, 0.15, val)
+            local l_gravity = lerp(old_gravity, new_gravity, mod_amount)
 
-        local old_wind = params:get("wind")
-        local new_wind = util.linlin(-1, 1, 0.05, 5, val)
-        local l_wind = lerp(old_wind, new_wind, params:get("mod_" .. i .. "_to_wind"))
+            params:set("gravity", l_gravity)
+        end
 
-        params:set("wind", l_wind)
+        if current_modulator == "wind" then
+            local old_wind = params:get("wind")
+            local new_wind = util.linlin(-1, 1, 0.05, 5, val)
+            local l_wind = lerp(old_wind, new_wind, mod_amount)
 
-        local old_diff = params:get("diffusion")
-        local new_diff = util.linlin(-1, 1, 0, 1, val)
-        local l_diff = lerp(old_wind, new_wind, params:get("mod_" .. i .. "_to_diffusion"))
+            params:set("wind", l_wind)
+        end
 
-        params:set("diffusion", l_diff)
+        if current_modulator == "diffusion" then
+            local old_diff = params:get("diffusion")
+            local new_diff = util.linlin(-1, 1, 0, 1, val)
+            local l_diff = lerp(old_diff, new_diff, mod_amount)
+
+            params:set("diffusion", l_diff)
+        end
     end
 
     local function mod_1_callback(val)
@@ -174,6 +149,12 @@ function init()
     end
     modulators.set_callback(2, mod_2_callback)
     modulators.start_poll(2)
+
+    local function mod_3_callback(val)
+        mod_callback(val, 3)
+    end
+    modulators.set_callback(3, mod_3_callback)
+    modulators.start_poll(3)
 end
 
 function key(n, z)
