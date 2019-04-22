@@ -10,7 +10,7 @@ local DEFAULT_WIDTH = 16
 local DEFAULT_DENSITY = 100
 local DEFAULT_SMOOTHNESS = 0.1
 local DEFAULT_DURATION = 5
-local DURATION_SCALE = 0.6
+local DURATION_SCALE = 0.85
 
 local function emit(self)
     if self.is_dead_ then
