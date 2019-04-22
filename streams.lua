@@ -93,10 +93,10 @@ function init()
         end
     }
 
-    modulators.init(true, true, false)
+    modulators.init(2, true, true, false)
 
     params:add_separator()
-    for i = 1, modulators.NUM_MODULATORS do
+    for i = 1, modulators.num do
         params:add {
             type = "control",
             id = "mod_" .. i .. "_to_gravity",
@@ -122,7 +122,7 @@ function init()
     arcify:register("diffusion", 0.01)
     arcify:register("gravity", 0.01)
 
-    for i = 1, modulators.NUM_MODULATORS do
+    for i = 1, modulators.num do
         arcify:register("mod_" .. i .. "_hz", 0.1)
         arcify:register("mod_" .. i .. "_to_wind", 0.01)
         arcify:register("mod_" .. i .. "_to_gravity", 0.01)

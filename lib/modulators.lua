@@ -3,10 +3,10 @@ modulators.types = {"sine", "noise", "brownian", "lorenz"}
 modulators.types_rev = {sine = 1, noise = 2, brownian = 3, lorenz = 4}
 modulators.polls = {}
 modulators.values = {}
-modulators.NUM_MODULATORS = 2
+modulators.num = 0
 
 modulators.create_polls = function()
-    for i = 1, modulators.NUM_MODULATORS do
+    for i = 1, modulators.num do
         modulators.polls[i] = poll.set("mod_" .. i .. "_out")
         modulators.polls[i].callback = function(val)
             modulators.values[i] = val
@@ -61,14 +61,15 @@ modulators.update_all = function()
     end
 end
 
-modulators.init = function(add_type, add_hz, add_lag)
+modulators.init = function(num_modulators, add_type, add_hz, add_lag)
+    modulators.num = num_modulators
     modulators.create_params(add_type, add_hz, add_lag)
     modulators.create_polls()
 end
 
 modulators.create_params = function(add_type, add_hz, add_lag)
     params:add_separator()
-    for i = 1, modulators.NUM_MODULATORS do
+    for i = 1, modulators.num do
         if add_type then
             params:add {
                 type = "option",
