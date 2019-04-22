@@ -93,8 +93,7 @@ function init()
         end
     }
 
-    modulators.create_params(true, true)
-    modulators.create_polls()
+    modulators.init(true, true, false)
 
     params:add_separator()
     for i = 1, modulators.NUM_MODULATORS do
@@ -134,8 +133,6 @@ function init()
     params:default()
 
     local function mod_callback(val, i)
-        print("Mod " .. i .. " Value: " .. val)
-
         local old_gravity = params:get("gravity")
         local new_gravity = util.linlin(-1, 1, -0.15, 0.15, val)
         local l_gravity = lerp(old_gravity, new_gravity, params:get("mod_" .. i .. "_to_gravity"))
