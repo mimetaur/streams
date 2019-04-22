@@ -163,10 +163,7 @@ function init()
 end
 
 function key(n, z)
-    if n == 2 and z == 1 then
-        print(modulators.update_poll(1))
-    end
-
+    arcify:handle_shift(n, z)
     redraw()
 end
 
