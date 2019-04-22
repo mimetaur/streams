@@ -10,7 +10,7 @@ modulators.create_polls = function()
         modulators.polls[i].callback = function(val)
             modulators.values[i] = val
         end
-        modulators.polls[i].time = 0.25
+        modulators.polls[i].time = 1
         modulators.update_poll(i)
     end
 end
@@ -60,21 +60,20 @@ modulators.update_all = function()
     end
 end
 
-modulators.create_params = function(add_type, add_hz, add_amp, add_lag)
+modulators.init = function()
+    modulators.create_modulators()
+    modulators.create_params()
+    modulators.create_polls()
+end
+
+modulators.create_modulators = function()
+    engine.add_mod(1, 1)
+    engine.add_mod(2, 2)
+end
+
+modulators.create_params = function(add_type, add_hz, add_lag)
     params:add_separator()
     for i = 1, modulators.NUM_MODULATORS do
-        if add_type then
-            params:add {
-                type = "option",
-                id = "mod_" .. i .. "_type",
-                name = "modulator " .. i .. " type",
-                options = modulators.types,
-                default = 1,
-                action = function(value)
-                    engine.mod_type(i, value)
-                end
-            }
-        end
         if add_hz then
             params:add {
                 type = "control",
@@ -83,17 +82,7 @@ modulators.create_params = function(add_type, add_hz, add_amp, add_lag)
                 controlspec = controlspec.new(0, 20, "lin", 0.01, 5, "hz"),
                 action = function(value)
                     engine.mod_hz(i, value)
-                end
-            }
-        end
-        if add_amp then
-            params:add {
-                type = "control",
-                id = "mod_" .. i .. "_amp",
-                name = "modulator " .. i .. " amp",
-                controlspec = controlspec.new(0, 1, "lin", 0.01, 1.0),
-                action = function(value)
-                    engine.mod_amp(i, value)
+                    billboard:display_param("Mod " .. i .. "Freq", value .. " hz")
                 end
             }
         end
@@ -105,6 +94,7 @@ modulators.create_params = function(add_type, add_hz, add_amp, add_lag)
                 controlspec = controlspec.new(0, 1, "lin", 0.1, 0.01),
                 action = function(value)
                     engine.mod_lag(i, value)
+                    billboard:display_param("Mod " .. i .. "Lag", value)
                 end
             }
         end

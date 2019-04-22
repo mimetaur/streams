@@ -14,7 +14,7 @@ local my_arc = arc.connect()
 local arcify = Arcify.new(my_arc, false)
 
 local Billboard = include("billboard/lib/billboard")
-local billboard = Billboard.new()
+billboard = Billboard.new()
 
 -- script vars
 local clock = {}
@@ -62,7 +62,7 @@ function init()
         type = "control",
         id = "wind",
         name = "wind amount",
-        controlspec = controlspec.new(0, 5, "lin", 0.01, 0.05),
+        controlspec = controlspec.new(0.05, 5, "lin", 0.01, 0.2),
         action = function(value)
             local iv = 5 - value
             local scaled = util.linlin(0, 5, 1, 15, iv)
@@ -102,23 +102,19 @@ function init()
             type = "control",
             id = "mod_" .. i .. "_to_gravity",
             name = "Mod " .. i .. " Gravity Amount",
-            controlspec = controlspec.new(0, 1, "lin", 0.01, 0)
+            controlspec = controlspec.new(0, 1, "lin", 0.01, 0),
+            action = function(value)
+                billboard:display_param("Mod " .. i .. " to Gravity", value)
+            end
         }
 
         params:add {
             type = "control",
             id = "mod_" .. i .. "_to_wind",
             name = "Mod " .. i .. " Wind Amount",
-            controlspec = controlspec.new(0, 1, "lin", 0.01, 0)
-        }
-
-        params:add {
-            type = "control",
-            id = "mod_" .. i .. "_rate",
-            name = "Mod " .. i .. " Callback Rate",
-            controlspec = controlspec.new(0.5, 10, "lin", 0.5, 1),
+            controlspec = controlspec.new(0, 1, "lin", 0.01, 0),
             action = function(value)
-                modulators.set_time(1, value)
+                billboard:display_param("Mod " .. i .. " to Wind", value)
             end
         }
     end
@@ -127,16 +123,10 @@ function init()
     arcify:register("diffusion", 0.01)
     arcify:register("gravity", 0.01)
 
-    arcify:register("mod_1_to_wind", 0.01)
-    arcify:register("mod_1_to_gravity", 0.01)
-    arcify:register("mod_1_rate", 0.5)
-
     for i = 1, modulators.NUM_MODULATORS do
-        arcify:register("mod_" .. i .. "_type")
-        arcify:register("mod_" .. i .. "_hz")
-        arcify:register("mod_" .. i .. "_rate")
-        arcify:register("mod_" .. i .. "_to_wind")
-        arcify:register("mod_" .. i .. "_to_gravity")
+        arcify:register("mod_" .. i .. "_hz", 0.1)
+        arcify:register("mod_" .. i .. "_to_wind", 0.01)
+        arcify:register("mod_" .. i .. "_to_gravity", 0.01)
     end
 
     arcify:add_params()
@@ -144,6 +134,8 @@ function init()
     params:default()
 
     local function mod_callback(val, i)
+        print("Mod " .. i .. " Value: " .. val)
+
         local old_gravity = params:get("gravity")
         local new_gravity = util.linlin(-1, 1, -0.15, 0.15, val)
         local l_gravity = lerp(old_gravity, new_gravity, params:get("mod_" .. i .. "_to_gravity"))
@@ -151,8 +143,8 @@ function init()
         params:set("gravity", l_gravity)
 
         local old_wind = params:get("wind")
-        local new_wind = util.linlin(-1, 1, -0.1, 0.1, val)
-        local l_wind = lerp(old_wind, new_wind, params:get("mod_" .. i .. "_to_gravity"))
+        local new_wind = util.linlin(-1, 1, 0.05, 5, val)
+        local l_wind = lerp(old_wind, new_wind, params:get("mod_" .. i .. "_to_wind"))
 
         params:set("wind", l_wind)
     end
@@ -161,14 +153,12 @@ function init()
         mod_callback(val, 1)
     end
     modulators.set_callback(1, mod_1_callback)
-    modulators.set_time(1, 1)
     modulators.start_poll(1)
 
     local function mod_2_callback(val)
         mod_callback(val, 2)
     end
     modulators.set_callback(2, mod_2_callback)
-    modulators.set_time(2, 1)
     modulators.start_poll(2)
 end
 

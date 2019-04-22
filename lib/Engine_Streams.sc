@@ -14,9 +14,11 @@ Engine_Streams : CroneEngine {
 	var grain_dur = 0.01;
 	var width = 1.0;
 
-	var num_modulators = 2;
+	var max_modulators = 4;
 	var modulators;
 	var modulator_outs;
+	var modulator_types = #[\BrownianModulator, \NoiseModulator, \SineModulator];
+
 
 
 	*new { arg context, doneCallback;
@@ -47,32 +49,38 @@ Engine_Streams : CroneEngine {
 			Out.ar(out, Splay.ar(sig, width));
 		}).add;
 
-		SynthDef(\Modulator, {
-			arg out, freq = 5, amp = 1.0, lag = 0.1, aux = 1.0, type = 0;
-			var mod, mod_scaled, modulator_array;
+		SynthDef(\BrownianModulator, {
+			arg out, freq = 10, lag = 0.1, aux = 1.0;
+			var mod, to_out;
 
-			modulator_array = [
-				SinOsc.kr(freq).range(-1, 1),
-				LFTri.kr(freq).range(-1, 1),
-				LFSaw.kr(freq).range(-1, 1),
-				LFPulse.kr(freq, mul: 2, add: -1).range(-1, 1),
-				LFNoise0.kr(freq).range(-1, 1),
-				LFBrownNoise1.kr(freq: freq, dev: aux).range(-1, 1),
-				A2K.kr(in: LorenzL.ar(freq: freq)).range(-1, 1)
-			];
+			mod = LFBrownNoise1.kr(freq: freq, dev: aux).range(-1, 1);
+			to_out = Lag.kr(mod, lag);
+			Out.kr(out, to_out);
+		}).add;
 
-			mod = Select.kr(type, modulator_array);
-			mod_scaled = Lag.kr(mod, lag) * amp;
+		SynthDef(\NoiseModulator, {
+			arg out, freq = 10, lag = 0.1, aux = 0;
+			var mod, to_out;
 
-			Out.kr(out, mod_scaled);
+			mod = LFNoise0.kr(freq).range(-1, 1);
+			to_out = Lag.kr(mod, lag);
+			Out.kr(out, to_out);
+		}).add;
 
+		SynthDef(\SineModulator, {
+			arg out, freq = 10, lag = 0.1, aux = 0;
+			var mod, to_out;
+
+			mod = SinOsc.kr(freq).range(-1, 1);
+			to_out = Lag.kr(mod, lag);
+			Out.kr(out, to_out);
 		}).add;
 
 
 		context.server.sync;
 
-		modulator_outs = Array.fill(num_modulators, { arg i; Bus.control(context.server) });
-		modulators = Array.fill(num_modulators, { arg i; Synth.new(\Modulator, [\out, modulator_outs.at(i)], target:synthGroup); });
+		modulator_outs = Array.fill(max_modulators, { arg i; Bus.control(context.server) });
+		modulators = Array.fill(max_modulators, { arg i; Synth.new(modulator_types.choose, [\out, modulator_outs.at(i)], target:synthGroup); });
 
 		context.server.sync;
 
@@ -109,16 +117,25 @@ Engine_Streams : CroneEngine {
 
 		// Modulator Commands
 
+		this.addCommand("add_mod", "ii", { arg msg;
+/*			var type = msg[1] - 1;
+			var slot_num = msg[2] - 1;
+			var mod_name = modulator_types.at(type);
+			var mod = Synth.new(\SineModulator, [\out, modulator_outs.at(slot_num)], target:synthGroup);
+			modulators.put(slot_num, mod);*/
+		});
+
+		this.addCommand("remove_mod", "i", { arg msg;
+/*			var slot_num = msg[2] - 1;
+			var mod = modulators.removeAt(slot_num);
+			mod.free;*/
+		});
+
+
 		this.addCommand("mod_hz", "if", { arg msg;
 			var i = msg[1] - 1;
 			var val = msg[2];
 			modulators.at(i).set(\freq, val);
-		});
-
-		this.addCommand("mod_amp", "if", { arg msg;
-			var i = msg[1] - 1;
-			var val = msg[2];
-			modulators.at(i).set(\amp, val);
 		});
 
 		this.addCommand("mod_lag", "if", { arg msg;
@@ -132,13 +149,6 @@ Engine_Streams : CroneEngine {
 			var val = msg[2];
 			modulators.at(i).set(\aux, val);
 		});
-
-		this.addCommand("mod_type", "ii", { arg msg;
-			var i = msg[1] - 1;
-			var val = msg[2] - 1;
-			modulators.at(i).set(\type, val);
-		});
-
 
 		// Polls
 
