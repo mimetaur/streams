@@ -10,6 +10,7 @@ local DEFAULT_WIDTH = 16
 local DEFAULT_DENSITY = 100
 local DEFAULT_SMOOTHNESS = 0.1
 local DEFAULT_DURATION = 5
+local DURATION_SCALE = 0.6
 
 local function emit(self)
     if self.is_dead_ then
@@ -27,7 +28,7 @@ local function emit(self)
     local w = params:get("wind")
     local iw = 5 - w
     local mod = util.linlin(0, 5, 0.15, 1.3, iw)
-    local d = dur * mod
+    local d = (dur * mod) * DURATION_SCALE
     engine.dur(d)
 
     local inv_num = 1 / self:num_streams()
