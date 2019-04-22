@@ -23,6 +23,7 @@ local spawn_counter = 1
 local spawn_rate = 10
 local diffusion_rate = 0
 local gravity = 0
+local primary_params = {}
 
 local function lerp(a, b, t)
     return a + (b - a) * t
@@ -71,16 +72,7 @@ function init()
             billboard:display_param("wind", -1 * value)
         end
     }
-    params:add {
-        type = "control",
-        id = "diffusion",
-        name = "diffusion rate",
-        controlspec = controlspec.new(0, 1, "lin", 0.01, diffusion_rate),
-        action = function(value)
-            diffusion_rate = value
-            billboard:display_param("diffusion rate", value)
-        end
-    }
+    table.insert(primary_params, "wind")
 
     params:add {
         type = "control",
@@ -92,8 +84,21 @@ function init()
             billboard:display_param("gravity", util.round(gravity, 0.01))
         end
     }
+    table.insert(primary_params, "gravity")
 
-    modulators.init(3, {"wind", "gravity", "diffusion"}, true, true, true, false)
+    params:add {
+        type = "control",
+        id = "diffusion",
+        name = "diffusion rate",
+        controlspec = controlspec.new(0, 1, "lin", 0.01, diffusion_rate),
+        action = function(value)
+            diffusion_rate = value
+            billboard:display_param("diffusion rate", value)
+        end
+    }
+    table.insert(primary_params, "diffusion")
+
+    modulators.init(3, primary_params, true, true, true, false)
 
     arcify:register("wind", 0.05)
     arcify:register("diffusion", 0.01)
