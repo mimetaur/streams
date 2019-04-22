@@ -93,7 +93,7 @@ function init()
         end
     }
 
-    modulators.init(2, true, true, false)
+    modulators.init(3, true, true, false)
 
     params:add_separator()
     for i = 1, modulators.num do
@@ -116,6 +116,16 @@ function init()
                 billboard:display_param("Mod " .. i .. " to Wind", value)
             end
         }
+
+        params:add {
+            type = "control",
+            id = "mod_" .. i .. "_to_diffusion",
+            name = "Mod " .. i .. " Diffusion Amount",
+            controlspec = controlspec.new(0, 1, "lin", 0.01, 0),
+            action = function(value)
+                billboard:display_param("Mod " .. i .. " to Diffusion", value)
+            end
+        }
     end
 
     arcify:register("wind", 0.05)
@@ -126,6 +136,7 @@ function init()
         arcify:register("mod_" .. i .. "_hz", 0.1)
         arcify:register("mod_" .. i .. "_to_wind", 0.01)
         arcify:register("mod_" .. i .. "_to_gravity", 0.01)
+        arcify:register("mod_" .. i .. "_to_diffusion", 0.01)
     end
 
     arcify:add_params()
@@ -144,6 +155,12 @@ function init()
         local l_wind = lerp(old_wind, new_wind, params:get("mod_" .. i .. "_to_wind"))
 
         params:set("wind", l_wind)
+
+        local old_diff = params:get("diffusion")
+        local new_diff = util.linlin(-1, 1, 0, 1, val)
+        local l_diff = lerp(old_wind, new_wind, params:get("mod_" .. i .. "_to_diffusion"))
+
+        params:set("diffusion", l_diff)
     end
 
     local function mod_1_callback(val)
