@@ -14,7 +14,7 @@ local my_arc = arc.connect()
 local arcify = Arcify.new(my_arc, false)
 
 local Billboard = include("billboard/lib/billboard")
-billboard = Billboard.new()
+billboard = Billboard.new({mode = "banner"})
 
 -- script vars
 local clock = {}
