@@ -16,7 +16,7 @@ modulators.create_polls = function()
         modulators.polls[i].callback = function(val)
             modulators.values[i] = val
         end
-        modulators.polls[i].time = 0.1
+        modulators.polls[i].time = 0.05
         modulators.update_poll(i)
     end
 end
@@ -80,7 +80,6 @@ modulators.cache_param = function(param_name, value)
     if cached_param.ignore == true then
         cached_param.ignore = false
     else
-        print("Caching value: " .. value .. " for " .. param_name)
         cached_param.value = value
     end
 end
