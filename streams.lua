@@ -25,6 +25,8 @@ local diffusion_rate = 0
 local gravity = 0
 local primary_params = {}
 
+local controlspecs = {}
+
 local function lerp(a, b, t)
     return a + (b - a) * t
 end
@@ -59,12 +61,14 @@ function init()
     spawn_clock = metro.init(spawn, 0.1, -1)
     spawn_clock:start()
 
+    controlspecs.wind = controlspec.new(0.05, 5, "lin", 0.01, 0.2)
     params:add {
         type = "control",
         id = "wind",
         name = "wind amount",
-        controlspec = controlspec.new(0.05, 5, "lin", 0.01, 0.2),
+        controlspec = controlspecs.wind,
         action = function(value)
+            modulators.cache_param("wind", value)
             local iv = 5 - value
             local scaled = util.linlin(0, 5, 1, 15, iv)
             spawn_rate = scaled
@@ -74,24 +78,28 @@ function init()
     }
     table.insert(primary_params, "wind")
 
+    controlspecs.gravity = controlspec.new(-0.15, 0.15, "lin", 0.01, 0)
     params:add {
         type = "control",
         id = "gravity",
         name = "gravity amount",
-        controlspec = controlspec.new(-0.15, 0.15, "lin", 0.01, 0),
+        controlspec = controlspecs.gravity,
         action = function(value)
+            modulators.cache_param("gravity", value)
             gravity = value
             billboard:display_param("gravity", util.round(gravity, 0.01))
         end
     }
     table.insert(primary_params, "gravity")
 
+    controlspecs.diffusion = controlspec.new(0, 1, "lin", 0.01, diffusion_rate)
     params:add {
         type = "control",
         id = "diffusion",
         name = "diffusion rate",
-        controlspec = controlspec.new(0, 1, "lin", 0.01, diffusion_rate),
+        controlspec = controlspecs.diffusion,
         action = function(value)
+            modulators.cache_param("diffusion", value)
             diffusion_rate = value
             billboard:display_param("diffusion rate", value)
         end
@@ -113,37 +121,38 @@ function init()
 
     params:default()
 
-    local function mod_callback(val, i)
-        if modulators.get_type(i) == "none" then
-            return
-        end
+    local function mod_set_param(param_name, value, mod_amt)
+        local mmin = modulators.minval
+        local mmax = modulators.maxval
+        local pmin = controlspecs[param_name].minval
+        local pmax = controlspecs[param_name].maxval
+        local mod = util.linlin(mmin, mmax, pmin, pmax, value)
+        local cached = modulators.get_cached_value(param_name)
 
+        local interpolated = lerp(cached, mod, mod_amt)
+        modulators.ignore_param_change(param_name)
+        params:set(param_name, interpolated)
+    end
+
+    local function mod_callback(val, i)
         local param_idx = params:get("mod_" .. i .. "_param")
         local current_modulator = modulators.params[param_idx]
         local mod_amount = params:get("mod_" .. i .. "_amount")
 
-        if current_modulator == "gravity" then
-            local old_gravity = params:get("gravity")
-            local new_gravity = util.linlin(-1, 1, -0.15, 0.15, val)
-            local l_gravity = lerp(old_gravity, new_gravity, mod_amount)
+        if modulators.get_type(i) == "none" or mod_amount == 0 then
+            return
+        end
 
-            params:set("gravity", l_gravity)
+        if current_modulator == "gravity" then
+            mod_set_param("gravity", val, mod_amount)
         end
 
         if current_modulator == "wind" then
-            local old_wind = params:get("wind")
-            local new_wind = util.linlin(-1, 1, 0.05, 5, val)
-            local l_wind = lerp(old_wind, new_wind, mod_amount)
-
-            params:set("wind", l_wind)
+            mod_set_param("wind", val, mod_amount)
         end
 
         if current_modulator == "diffusion" then
-            local old_diff = params:get("diffusion")
-            local new_diff = util.linlin(-1, 1, 0, 1, val)
-            local l_diff = lerp(old_diff, new_diff, mod_amount)
-
-            params:set("diffusion", l_diff)
+            mod_set_param("diffusion", val, mod_amount)
         end
     end
 

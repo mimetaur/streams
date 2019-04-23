@@ -4,6 +4,10 @@ modulators.types_rev = {none = 1, sine = 2, noise = 3, brownian = 4, lorenz = 5}
 modulators.polls = {}
 modulators.values = {}
 modulators.params = {}
+modulators.cached_params = {}
+modulators.minval = -1
+modulators.maxval = 1
+
 modulators.num = 0
 
 modulators.create_polls = function()
@@ -67,9 +71,35 @@ modulators.update_all = function()
     end
 end
 
+modulators.get_original = function(param_name)
+    return modulators.stored_params[param_name]
+end
+
+modulators.cache_param = function(param_name, value)
+    local cached_param = modulators.cached_params[param_name]
+    if cached_param.ignore == true then
+        cached_param.ignore = false
+    else
+        print("Caching value: " .. value .. " for " .. param_name)
+        cached_param.value = value
+    end
+end
+
+modulators.get_cached_value = function(param_name)
+    return modulators.cached_params[param_name].value
+end
+
+modulators.ignore_param_change = function(param_name)
+    modulators.cached_params[param_name].ignore = true
+end
+
 modulators.init = function(num_modulators, mod_params, add_params, add_type, add_speed, add_lag)
     modulators.num = num_modulators
     modulators.params = mod_params
+
+    for _, param_name in ipairs(modulators.params) do
+        modulators.cached_params[param_name] = {value = params:get(param_name), ignore = false}
+    end
 
     modulators.create_params(add_params, add_type, add_speed, add_lag)
     modulators.create_polls()
@@ -98,7 +128,6 @@ modulators.create_params = function(add_params, add_type, add_speed, add_lag)
                 controlspec = controlspec.new(1, 100, "lin", 1, 50),
                 action = function(value)
                     engine.mod_speed(i, value)
-                    local speed_in_hz = util.round(util.linexp(1, 100, 0.0001, 5, value), 0.0001)
                 end
             }
         end
