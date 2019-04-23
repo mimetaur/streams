@@ -18,6 +18,7 @@ Engine_Streams : CroneEngine {
 	var modulators;
 	var modulator_outs;
 	var modulator_types = #[\ConstantMod, \SineMod, \NoiseMod, \BrownianMod, \LorenzMod];
+	var modulator_freqs;
 
 	*new { arg context, doneCallback;
 		^super.new(context, doneCallback);
@@ -99,6 +100,7 @@ Engine_Streams : CroneEngine {
 
 		modulator_outs = Array.fill(max_modulators, { arg i; Bus.control(context.server) });
 		modulators = Array.fill(max_modulators, { arg i; Synth.new(modulator_types.at(0), [\out, modulator_outs.at(i)], target:synthGroup); });
+		modulator_freqs = Array.fill(max_modulators, { arg i; 1 });
 
 		context.server.sync;
 
@@ -145,7 +147,7 @@ Engine_Streams : CroneEngine {
 				old_mod = modulators.at(slot_num);
 				old_mod.free;
 
-				mod = Synth.new(mod_name, [\out, modulator_outs.at(slot_num)], target:synthGroup);
+				mod = Synth.new(mod_name, [\out, modulator_outs.at(slot_num), \hz, modulator_freqs.at(slot_num)], target:synthGroup);
 				modulators.put(slot_num, mod);
 			});
 		});
@@ -157,7 +159,8 @@ Engine_Streams : CroneEngine {
 
 			if ( (i > -1) && (i < modulators.size), {
 				val.clip(1, 100);
-				hz = val.linexp(1, 100, 0.0001, 5);
+				hz = val.linexp(1, 100, 0.001, 30);
+				modulator_freqs.put(i, hz);
 
 				modulators.at(i).set(\hz, hz);
 			});
