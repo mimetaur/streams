@@ -17,9 +17,7 @@ Engine_Streams : CroneEngine {
 	var max_modulators = 4;
 	var modulators;
 	var modulator_outs;
-	var modulator_types = #[\SineModulator, \NoiseModulator, \BrownianModulator, \LorenzModulator];
-
-
+	var modulator_types = #[\ConstantMod, \SineMod, \NoiseMod, \BrownianMod, \LorenzMod];
 
 	*new { arg context, doneCallback;
 		^super.new(context, doneCallback);
@@ -50,9 +48,18 @@ Engine_Streams : CroneEngine {
 			Out.ar(out, Splay.ar(sig, width));
 		}).add;
 
+
+
 		// Modulators
-		SynthDef(\SineModulator, {
-			arg out, hz = 10, lag = 0.1, aux = 0;
+
+		SynthDef(\ConstantMod, {
+			arg out, hz = 0, lag = 0, aux = 0;
+			var mod = DC.kr(aux).range(-1, 1);
+			Out.kr(out, mod);
+		}).add;
+
+		SynthDef(\SineMod, {
+			arg out, hz = 1, lag = 0.1, aux = 0;
 			var mod, to_out;
 
 			mod = SinOsc.kr(hz).range(-1, 1);
@@ -61,8 +68,8 @@ Engine_Streams : CroneEngine {
 		}).add;
 
 
-		SynthDef(\NoiseModulator, {
-			arg out, hz = 10, lag = 0.1, aux = 0;
+		SynthDef(\NoiseMod, {
+			arg out, hz = 1, lag = 0.1, aux = 0;
 			var mod, to_out;
 
 			mod = LFNoise0.kr(hz).range(-1, 1);
@@ -70,8 +77,8 @@ Engine_Streams : CroneEngine {
 			Out.kr(out, to_out);
 		}).add;
 
-		SynthDef(\BrownianModulator, {
-			arg out, hz = 10, lag = 0.1, aux = 1.0;
+		SynthDef(\BrownianMod, {
+			arg out, hz = 1, lag = 0.1, aux = 1.0;
 			var mod, to_out;
 
 			mod = LFBrownNoise1.kr(freq: hz, dev: aux).range(-1, 1);
@@ -79,16 +86,14 @@ Engine_Streams : CroneEngine {
 			Out.kr(out, to_out);
 		}).add;
 
-		SynthDef(\LorenzModulator, {
-			arg out, hz = 10, lag = 0.1, aux = 0.02;
+		SynthDef(\LorenzMod, {
+			arg out, hz = 1, lag = 0.1, aux = 0.02;
 			var mod, to_out;
 
 			mod = Lorenz2DC.kr(minfreq: hz, maxfreq: hz, h: aux).range(-1, 1);
 			to_out = Lag.kr(mod, lag);
 			Out.kr(out, to_out);
 		}).add;
-
-
 
 		context.server.sync;
 
@@ -145,7 +150,20 @@ Engine_Streams : CroneEngine {
 			});
 		});
 
-		#[\hz, \lag, \aux].do({ arg cmd, i;
+		this.addCommand("mod_speed", "if", { arg msg;
+			var i = msg[1] - 1;
+			var val = msg[2];
+			var hz;
+
+			if ( (i > -1) && (i < modulators.size), {
+				val.clip(1, 100);
+				hz = val.linexp(1, 100, 0.0001, 5);
+
+				modulators.at(i).set(\hz, hz);
+			});
+		});
+
+		#[\lag, \aux].do({ arg cmd, i;
 			this.addCommand("mod_" ++ cmd, "if", { arg msg;
 				var i = msg[1] - 1;
 				var val = msg[2];

@@ -1,6 +1,6 @@
 local modulators = {}
-modulators.types = {"sine", "noise", "brownian", "lorenz"}
-modulators.types_rev = {sine = 1, noise = 2, brownian = 3, lorenz = 4}
+modulators.types = {"none", "sine", "noise", "brownian", "lorenz"}
+modulators.types_rev = {none = 1, sine = 2, noise = 3, brownian = 4, lorenz = 5}
 modulators.polls = {}
 modulators.values = {}
 modulators.params = {}
@@ -12,9 +12,14 @@ modulators.create_polls = function()
         modulators.polls[i].callback = function(val)
             modulators.values[i] = val
         end
-        modulators.polls[i].time = 1
+        modulators.polls[i].time = 0.1
         modulators.update_poll(i)
     end
+end
+
+modulators.get_type = function(idx)
+    local type_idx = params:get("mod_" .. idx .. "_type")
+    return modulators.types[type_idx]
 end
 
 modulators.get_poll = function(idx)
@@ -62,15 +67,15 @@ modulators.update_all = function()
     end
 end
 
-modulators.init = function(num_modulators, mod_params, add_params, add_type, add_hz, add_lag)
+modulators.init = function(num_modulators, mod_params, add_params, add_type, add_speed, add_lag)
     modulators.num = num_modulators
     modulators.params = mod_params
 
-    modulators.create_params(add_params, add_type, add_hz, add_lag)
+    modulators.create_params(add_params, add_type, add_speed, add_lag)
     modulators.create_polls()
 end
 
-modulators.create_params = function(add_params, add_type, add_hz, add_lag)
+modulators.create_params = function(add_params, add_type, add_speed, add_lag)
     for i = 1, modulators.num do
         params:add_separator()
         if add_type then
@@ -85,15 +90,15 @@ modulators.create_params = function(add_params, add_type, add_hz, add_lag)
                 end
             }
         end
-        if add_hz then
+        if add_speed then
             params:add {
                 type = "control",
-                id = "mod_" .. i .. "_hz",
-                name = "mod " .. i .. " hz",
-                controlspec = controlspec.new(0.5, 30, "lin", 0.5, 5, "hz"),
+                id = "mod_" .. i .. "_speed",
+                name = "mod " .. i .. " speed",
+                controlspec = controlspec.new(1, 100, "lin", 1, 50),
                 action = function(value)
-                    engine.mod_hz(i, value)
-                    billboard:display_param("Mod " .. i .. "Freq", value .. " hz")
+                    engine.mod_speed(i, value)
+                    local speed_in_hz = util.round(util.linexp(1, 100, 0.0001, 5, value), 0.0001)
                 end
             }
         end
@@ -105,7 +110,6 @@ modulators.create_params = function(add_params, add_type, add_hz, add_lag)
                 controlspec = controlspec.new(0, 1, "lin", 0.1, 0.01),
                 action = function(value)
                     engine.mod_lag(i, value)
-                    billboard:display_param("Mod " .. i .. "Lag", value)
                 end
             }
         end

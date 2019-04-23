@@ -105,7 +105,7 @@ function init()
     arcify:register("gravity", 0.01)
 
     for i = 1, modulators.num do
-        arcify:register("mod_" .. i .. "_hz", 0.1)
+        arcify:register("mod_" .. i .. "_speed", 0.1)
         arcify:register("mod_" .. i .. "_amount", 0.01)
     end
 
@@ -114,6 +114,10 @@ function init()
     params:default()
 
     local function mod_callback(val, i)
+        if modulators.get_type(i) == "none" then
+            return
+        end
+
         local param_idx = params:get("mod_" .. i .. "_param")
         local current_modulator = modulators.params[param_idx]
         local mod_amount = params:get("mod_" .. i .. "_amount")
