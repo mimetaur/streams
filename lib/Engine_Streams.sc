@@ -70,8 +70,9 @@ Engine_Streams : CroneEngine {
 
 
 		SynthDef(\NoiseMod, {
-			arg out, hz = 1, lag = 0.1, aux = 0;
+			arg out, hz = 1, lag = 0.1, aux = 4;
 			var mod, to_out;
+			hz = hz * aux;
 
 			mod = LFNoise0.kr(hz).range(-1, 1);
 			to_out = Lag.kr(mod, lag);
@@ -88,10 +89,12 @@ Engine_Streams : CroneEngine {
 		}).add;
 
 		SynthDef(\LorenzMod, {
-			arg out, hz = 1, lag = 0.1, aux = 0.02;
+			arg out, hz = 1, lag = 0.1, aux = 4;
 			var mod, to_out;
 
-			mod = Lorenz2DC.kr(minfreq: hz, maxfreq: hz, h: aux).range(-1, 1);
+			hz = hz * aux;
+			mod = A2K.kr(in: LorenzL.ar(freq: hz)).range(-1, 1);
+			// mod = Lorenz2DC.kr(minfreq: hz, maxfreq: hz, h: aux).range(-1, 1);
 			to_out = Lag.kr(mod, lag);
 			Out.kr(out, to_out);
 		}).add;
