@@ -6,13 +6,13 @@
 Engine_StreamsBuffer : CroneEngine {
 	var synthGroup;
 
-	var freq = 440;
-	var freq_range = 0;
+	var rate = 1;
 	var density = 100;
 	var amp = 1.0;
 	var dur = 1.0;
 	var grain_dur = 0.01;
-	var width = 1.0;
+	var pan = 0;
+	var buffer;
 
 	var max_modulators = 4;
 	var modulators;
@@ -24,29 +24,44 @@ Engine_StreamsBuffer : CroneEngine {
 		^super.new(context, doneCallback);
 	}
 
+	// disk read
+	readBuf { arg i, path;
+		if(buffer.notNil, {
+			if (File.exists(path), {
+				var new_buffer = Buffer.readChannel(server: context.server, path: path, startFrame: 0, numFrames: -1, channels: [0], action: {
+					buffer.free;
+					buffer = new_buffer;
+				});
+			});
+		});
+	}
+
 	alloc {
 		// Output groups
 
 		synthGroup = ParGroup.tail(context.xg);
 
+		// allocate buffer
+		buffer = Buffer.alloc(context.server, context.server.sampleRate * 1);
+
 		// SynthDefs
 
 		// Audio
-		SynthDef(\SineGrainCloud, {
-			arg out, density = density, freq = freq, freq_range = freq_range, amp = amp, dur = dur, grain_dur = grain_dur, width = width;
+		SynthDef(\BufferCloud, {
+			arg out, rate = rate, density = density, amp = amp, dur = dur, grain_dur = grain_dur, pan = pan, buf = buffer;
 
 			var gd_ = grain_dur.clip(0.001, 0.25);
 			var amp_ = amp.linlin(0, 1, 0, 0.4);
 			var dens_ = density.clip(1, 1000);
 			var fill_factor = grain_dur * dens_;
 			var dens_amp = amp_ * fill_factor.linexp(0.001, 25, 1.0, 0.1);
-			var chan_dens = dens_ * 0.5;
-			var freq_range_ = freq_range.clip(0, freq);
+			var sound_buffer;
 
-			var snd = SinGrain.ar([Dust.ar(chan_dens), Dust.ar(chan_dens)], grain_dur, [BrownNoise.ar.range(freq - freq_range_, freq + freq_range_), BrownNoise.ar.range(freq - freq_range_, freq + freq_range_)]);
+			var snd = GrainBuf.ar(numChannels: 1, trigger: Dust.ar(dens_), dur: grain_dur, sndbuf: buf, rate: 1, pos: BrownNoise.ar.range(0,1), interp: 2, pan: 0, envbufnum: -1, maxGrains: 512);
+
 			var env = Env.sine(dur: dur, level: dens_amp).kr(2);
 			var sig = snd * env;
-			Out.ar(out, Splay.ar(sig, width));
+			Out.ar(out, Pan2.ar(sig, pan));
 		}).add;
 
 
@@ -94,13 +109,13 @@ Engine_StreamsBuffer : CroneEngine {
 
 			hz = hz * aux;
 			mod = A2K.kr(in: LorenzL.ar(freq: hz)).range(-1, 1);
-			// mod = Lorenz2DC.kr(minfreq: hz, maxfreq: hz, h: aux).range(-1, 1);
 			to_out = Lag.kr(mod, lag);
 			Out.kr(out, to_out);
 		}).add;
 
 		context.server.sync;
 
+		// set up initial modulator state
 		modulator_outs = Array.fill(max_modulators, { arg i; Bus.control(context.server) });
 		modulators = Array.fill(max_modulators, { arg i; Synth.new(modulator_types.at(0), [\out, modulator_outs.at(i)], target:synthGroup); });
 		modulator_freqs = Array.fill(max_modulators, { arg i; 1 });
@@ -109,13 +124,13 @@ Engine_StreamsBuffer : CroneEngine {
 
 		// Synth Engine Commands
 
-		this.addCommand("hz", "f", { arg msg;
+		this.addCommand("rate", "f", { arg msg;
 			var val = msg[1];
-			Synth(\SineGrainCloud, [\out, context.out_b, \freq, val, \amp, amp, \dur, dur, \freq_range, freq_range, \density, density, \grain_dur, grain_dur, \width, width], target:synthGroup);
+			Synth(\BufferCloud, [\out, context.out_b, \buf, buffer, \rate, val, \amp, amp, \dur, dur,  \density, density, \grain_dur, grain_dur, \pan, pan], target:synthGroup);
 		});
 
-		this.addCommand("hz_range", "f", { arg msg;
-			freq_range = msg[1];
+		this.addCommand("read", "s", { arg msg;
+			this.readBuf(msg[1]);
 		});
 
 		this.addCommand("dur", "f", { arg msg;
@@ -134,8 +149,8 @@ Engine_StreamsBuffer : CroneEngine {
 			grain_dur = msg[1];
 		});
 
-		this.addCommand("width", "f", { arg msg;
-			grain_dur = msg[1];
+		this.addCommand("pan", "f", { arg msg;
+			pan = msg[1];
 		});
 
 		// Modulator Commands
