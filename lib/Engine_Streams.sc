@@ -13,6 +13,7 @@ Engine_Streams : CroneEngine {
 	var dur = 1.0;
 	var grain_dur = 0.01;
 	var width = 1.0;
+	var max_grains = 512;
 
 	var max_modulators = 4;
 	var modulators;
@@ -33,7 +34,7 @@ Engine_Streams : CroneEngine {
 
 		// Audio
 		SynthDef(\SineGrainCloud, {
-			arg out, density = density, freq = freq, freq_range = freq_range, amp = amp, dur = dur, grain_dur = grain_dur, width = width;
+			arg out, density = density, freq = freq, freq_range = freq_range, amp = amp, dur = dur, grain_dur = grain_dur, width = width, max_grains = max_grains;
 
 			var gd_ = grain_dur.clip(0.001, 0.25);
 			var amp_ = amp.linlin(0, 1, 0, 0.4);
@@ -43,7 +44,8 @@ Engine_Streams : CroneEngine {
 			var chan_dens = dens_ * 0.5;
 			var freq_range_ = freq_range.clip(0, freq);
 
-			var snd = SinGrain.ar([Dust.ar(chan_dens), Dust.ar(chan_dens)], grain_dur, [BrownNoise.ar.range(freq - freq_range_, freq + freq_range_), BrownNoise.ar.range(freq - freq_range_, freq + freq_range_)]);
+			var snd = GrainSin.ar(numChannels: 2, trigger: Dust.ar(dens_), dur: grain_dur, freq: BrownNoise.ar.range(freq - freq_range_, freq + freq_range_).clip(80, 20000), pan: BrownNoise.ar.range(-1, 1), envbufnum: -1, maxGrains: max_grains);
+
 			var env = Env.sine(dur: dur, level: dens_amp).kr(2);
 			var sig = snd * env;
 			Out.ar(out, Splay.ar(sig, width));
@@ -111,7 +113,7 @@ Engine_Streams : CroneEngine {
 
 		this.addCommand("hz", "f", { arg msg;
 			var val = msg[1];
-			Synth(\SineGrainCloud, [\out, context.out_b, \freq, val, \amp, amp, \dur, dur, \freq_range, freq_range, \density, density, \grain_dur, grain_dur, \width, width], target:synthGroup);
+			Synth(\SineGrainCloud, [\out, context.out_b, \freq, val, \amp, amp, \dur, dur, \freq_range, freq_range, \density, density, \grain_dur, grain_dur, \width, width, \max_grains, max_grains], target:synthGroup);
 		});
 
 		this.addCommand("hz_range", "f", { arg msg;
@@ -136,6 +138,10 @@ Engine_Streams : CroneEngine {
 
 		this.addCommand("width", "f", { arg msg;
 			grain_dur = msg[1];
+		});
+
+		this.addCommand("max_grains", "f", { arg msg;
+			max_grains = msg[1];
 		});
 
 		// Modulator Commands
