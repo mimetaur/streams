@@ -1,8 +1,3 @@
--- Streams
--- Granular Sine Streams
-
-engine.name = "Streams"
-
 -- dependencies
 modulators = include("lib/modulators")
 
@@ -60,6 +55,17 @@ function init()
 
     spawn_clock = metro.init(spawn, 0.1, -1)
     spawn_clock:start()
+
+    if engine.name == "StreamsBuffer" then
+        params:add_file("file", "file path")
+        params:set_action(
+            "file",
+            function(filename)
+                engine.read(filename)
+            end
+        )
+        params:add_separator()
+    end
 
     controlspecs.wind = controlspec.new(0.05, 5, "lin", 0.01, 0.2)
     params:add {

@@ -6,13 +6,16 @@
 Engine_StreamsBuffer : CroneEngine {
 	var synthGroup;
 
+	var buffer;
 	var rate = 1;
 	var density = 100;
 	var amp = 1.0;
 	var dur = 1.0;
+	var min_pos = 0;
+	var max_pos = 1;
 	var grain_dur = 0.01;
-	var pan = 0;
-	var buffer;
+	var max_grains = 512;
+	var width = 1;
 
 	var max_modulators = 4;
 	var modulators;
@@ -25,7 +28,7 @@ Engine_StreamsBuffer : CroneEngine {
 	}
 
 	// disk read
-	readBuf { arg i, path;
+	readBuf { arg path;
 		if(buffer.notNil, {
 			if (File.exists(path), {
 				var new_buffer = Buffer.readChannel(server: context.server, path: path, startFrame: 0, numFrames: -1, channels: [0], action: {
@@ -48,23 +51,21 @@ Engine_StreamsBuffer : CroneEngine {
 
 		// Audio
 		SynthDef(\BufferCloud, {
-			arg out, rate = rate, density = density, amp = amp, dur = dur, grain_dur = grain_dur, pan = pan, buf = buffer;
+			arg out, rate = rate, density = density, amp = amp, dur = dur, grain_dur = grain_dur, width = width, buf = buffer, max_grains = max_grains, min_pos = min_pos, max_pos = max_pos;
 
 			var gd_ = grain_dur.clip(0.001, 0.25);
-			var amp_ = amp.linlin(0, 1, 0, 0.4);
+			var amp_ = amp.linlin(0, 1, 0.5, 1.0);
 			var dens_ = density.clip(1, 1000);
 			var fill_factor = grain_dur * dens_;
 			var dens_amp = amp_ * fill_factor.linexp(0.001, 25, 1.0, 0.1);
 			var sound_buffer;
 
-			var snd = GrainBuf.ar(numChannels: 1, trigger: Dust.ar(dens_), dur: grain_dur, sndbuf: buf, rate: 1, pos: BrownNoise.ar.range(0,1), interp: 2, pan: 0, envbufnum: -1, maxGrains: 512);
+			var snd = GrainBuf.ar(numChannels: 2, trigger: Dust.ar(dens_), dur: grain_dur, sndbuf: buf, rate: 1, pos: BrownNoise.ar.range(min_pos,max_pos), interp: 2, pan: BrownNoise.ar.range(-1, 1), envbufnum: -1, maxGrains: max_grains);
 
 			var env = Env.sine(dur: dur, level: dens_amp).kr(2);
 			var sig = snd * env;
-			Out.ar(out, Pan2.ar(sig, pan));
+			Out.ar(out, Splay.ar(sig, width));
 		}).add;
-
-
 
 		// Modulators
 
@@ -126,7 +127,7 @@ Engine_StreamsBuffer : CroneEngine {
 
 		this.addCommand("rate", "f", { arg msg;
 			var val = msg[1];
-			Synth(\BufferCloud, [\out, context.out_b, \buf, buffer, \rate, val, \amp, amp, \dur, dur,  \density, density, \grain_dur, grain_dur, \pan, pan], target:synthGroup);
+			Synth(\BufferCloud, [\out, context.out_b, \buf, buffer, \rate, val, \amp, amp, \dur, dur,  \density, density, \grain_dur, grain_dur, \width, width, \max_grains, max_grains, \min_pos, min_pos, \max_pos, max_pos], target:synthGroup);
 		});
 
 		this.addCommand("read", "s", { arg msg;
@@ -149,9 +150,22 @@ Engine_StreamsBuffer : CroneEngine {
 			grain_dur = msg[1];
 		});
 
-		this.addCommand("pan", "f", { arg msg;
-			pan = msg[1];
+		this.addCommand("max_grains", "f", { arg msg;
+			max_grains = msg[1];
 		});
+
+		this.addCommand("min_pos", "f", { arg msg;
+			min_pos = msg[1];
+		});
+
+		this.addCommand("max_pos", "f", { arg msg;
+			max_pos = msg[1];
+		});
+
+		this.addCommand("width", "f", { arg msg;
+			width = msg[1];
+		});
+
 
 		// Modulator Commands
 

@@ -12,39 +12,76 @@ local DEFAULT_SMOOTHNESS = 0.1
 local DEFAULT_DURATION = 5
 local DURATION_SCALE = 0.85
 
+local function emit_sines(self, par)
+    -- set engine params
+
+    engine.density(par.density)
+    engine.grain_dur(par.grain_dur)
+    engine.dur(par.dur)
+    engine.amp(par.amp)
+    engine.hz_range(par.hz_range)
+
+    -- hz triggers note
+    engine.hz(par.hz)
+end
+
+local function emit_buffer(self, par)
+    -- set engine params
+    engine.density(par.density)
+    engine.grain_dur(par.grain_dur)
+    engine.dur(par.dur)
+    engine.amp(1)
+
+    -- rate triggers note
+    engine.rate(par.rate)
+end
+
+local function calculate_sound_params(self)
+    local sp = {}
+
+    -- calculate duration
+    local w = params:get("wind")
+    local iw = 5 - w
+    local mod = util.linlin(0, 5, 0.15, 1.3, iw)
+    local dur = util.linlin(WIDTH_UNIT, WIDTH_UNIT * 8, 1, 4, self.w_)
+    local dur_val = (dur * mod) * DURATION_SCALE
+
+    -- calculate amp
+    local inv_num = 1 / self:num_streams()
+    local amp_val = inv_num * 0.8
+
+    -- calculate hz
+    local inv_y = 64 - self.y_
+    local hz_val = util.linexp(0, 64, 120, 1400, inv_y)
+
+    -- calculate rate
+    local rate_val = util.linexp(0, 64, 0.25, 1.75, inv_y)
+
+    -- calculate hz_range
+    local hz_range_val = util.linlin(HEIGHT_UNIT, HEIGHT_UNIT * 4, 5, 100, self.h_)
+
+    sp.dur = dur_val
+    sp.amp = amp_val
+    sp.density = self.density_
+    sp.grain_dur = self.smoothness_
+    sp.hz = hz_val
+    sp.hz_range = hz_range_val
+    sp.rate = rate_val
+
+    return sp
+end
+
 local function emit(self)
     if self.is_dead_ then
         return
     end
 
-    -- sound parameters
-    local inv_y = 64 - self.y_
-    local cf = util.linexp(0, 64, 120, 1400, inv_y)
-
-    engine.grain_dur(self.smoothness_)
-    engine.density(self.density_)
-
-    local dur = util.linlin(WIDTH_UNIT, WIDTH_UNIT * 8, 1, 4, self.w_)
-    local w = params:get("wind")
-    local iw = 5 - w
-    local mod = util.linlin(0, 5, 0.15, 1.3, iw)
-    local d = (dur * mod) * DURATION_SCALE
-    engine.dur(d)
-
-    local inv_num = 1 / self:num_streams()
-    local amp_val = inv_num * 0.8
-    engine.amp(amp_val)
-
-    local fr = util.linlin(HEIGHT_UNIT, HEIGHT_UNIT * 4, 5, 100, self.h_)
-    engine.hz_range(fr)
-    engine.hz(cf)
-
-    -- gate on
-    -- engine.note_on(self.idx_)
-end
-
-local function silence(self)
-    -- engine.note_off(self.idx_)
+    local snd_params = calculate_sound_params(self)
+    if engine.name == "StreamsBuffer" then
+        emit_buffer(self, snd_params)
+    elseif engine.name == "Streams" then
+        emit_sines(self, snd_params)
+    end
 end
 
 function Stream.new(pool, idx)
