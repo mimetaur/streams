@@ -23,6 +23,9 @@ local diffusion_rate = 0
 local gravity = 0
 local primary_params = {}
 
+local options = {}
+options.max_grains = {64, 128, 256, 512, 1024}
+
 local controlspecs = {}
 
 local function lerp(a, b, t)
@@ -89,12 +92,14 @@ function init()
             end
         }
         params:add {
-            type = "control",
+            type = "option",
             id = "max_grains",
             name = "max num grains",
-            controlspec = controlspec.new(64, 1024, "exp", 4.0, 256),
+            options = options.max_grains,
+            default = 3, -- 256 grains
             action = function(value)
-                engine.max_grains(value)
+                local num = options.max_grains[value]
+                engine.max_grains(num)
             end
         }
         params:add_separator()
