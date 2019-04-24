@@ -30,7 +30,8 @@ local function emit_buffer(self, par)
     engine.density(par.density)
     engine.grain_dur(par.grain_dur)
     engine.dur(par.dur)
-    engine.amp(1)
+    engine.amp(par.amp)
+    engine.rate_range(par.rate_range)
 
     -- rate triggers note
     engine.rate(par.rate)
@@ -54,11 +55,14 @@ local function calculate_sound_params(self)
     local inv_y = 64 - self.y_
     local hz_val = util.linexp(0, 64, 120, 1400, inv_y)
 
-    -- calculate rate
-    local rate_val = util.linexp(0, 64, 0.25, 1.75, inv_y)
-
     -- calculate hz_range
     local hz_range_val = util.linlin(HEIGHT_UNIT, HEIGHT_UNIT * 4, 5, 100, self.h_)
+
+    -- calculate rate
+    local rate_val = util.linexp(0, 64, 0.5, 1.5, inv_y)
+
+    -- calculate rate range
+    local rate_range_val = util.linlin(HEIGHT_UNIT, HEIGHT_UNIT * 4, 0, 0.25, self.h_)
 
     sp.dur = dur_val
     sp.amp = amp_val
@@ -67,6 +71,7 @@ local function calculate_sound_params(self)
     sp.hz = hz_val
     sp.hz_range = hz_range_val
     sp.rate = rate_val
+    sp.rate_range = rate_range_val
 
     return sp
 end
@@ -162,7 +167,7 @@ function Stream:reset(x, y, w, h, density, smoothness)
     self.accel_x_ = 0
     self.accel_y_ = 0
 
-    local rdens = math.ceil(math.random(1000))
+    local rdens = math.ceil(math.random(300, 900))
     self.density_ = density or rdens
 
     local rsmooth = util.linlin(0, 1, 0.001, 0.25, math.random())

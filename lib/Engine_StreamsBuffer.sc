@@ -8,6 +8,7 @@ Engine_StreamsBuffer : CroneEngine {
 
 	var buffer;
 	var rate = 1;
+	var rate_range = 0;
 	var density = 100;
 	var amp = 1.0;
 	var dur = 1.0;
@@ -51,7 +52,7 @@ Engine_StreamsBuffer : CroneEngine {
 
 		// Audio
 		SynthDef(\BufferCloud, {
-			arg out, rate = rate, density = density, amp = amp, dur = dur, grain_dur = grain_dur, width = width, buf = buffer, max_grains = max_grains, min_pos = min_pos, max_pos = max_pos;
+			arg out, rate = rate, density = density, amp = amp, dur = dur, grain_dur = grain_dur, width = width, buf = buffer, max_grains = max_grains, min_pos = min_pos, max_pos = max_pos, rate_range = rate_range;
 
 			var gd_ = grain_dur.clip(0.001, 0.25);
 			var amp_ = amp.linlin(0, 1, 0.5, 1.0);
@@ -60,7 +61,7 @@ Engine_StreamsBuffer : CroneEngine {
 			var dens_amp = amp_ * fill_factor.linexp(0.001, 25, 1.0, 0.1);
 			var sound_buffer;
 
-			var snd = GrainBuf.ar(numChannels: 2, trigger: Dust.ar(dens_), dur: grain_dur, sndbuf: buf, rate: 1, pos: BrownNoise.ar.range(min_pos,max_pos), interp: 2, pan: BrownNoise.ar.range(-1, 1), envbufnum: -1, maxGrains: max_grains);
+			var snd = GrainBuf.ar(numChannels: 2, trigger: Dust.ar(dens_), dur: grain_dur, sndbuf: buf, rate: BrownNoise.ar.range(rate - rate_range, rate + rate_range), pos: BrownNoise.ar.range(min_pos, max_pos), interp: 2, pan: BrownNoise.ar.range(-1, 1), envbufnum: -1, maxGrains: max_grains);
 
 			var env = Env.sine(dur: dur, level: dens_amp).kr(2);
 			var sig = snd * env;
@@ -129,6 +130,11 @@ Engine_StreamsBuffer : CroneEngine {
 			var val = msg[1];
 			Synth(\BufferCloud, [\out, context.out_b, \buf, buffer, \rate, val, \amp, amp, \dur, dur,  \density, density, \grain_dur, grain_dur, \width, width, \max_grains, max_grains, \min_pos, min_pos, \max_pos, max_pos], target:synthGroup);
 		});
+
+		this.addCommand("rate_range", "f", { arg msg;
+			rate_range = msg[1];
+		});
+
 
 		this.addCommand("read", "s", { arg msg;
 			this.readBuf(msg[1]);
