@@ -91,19 +91,21 @@ function init()
                 engine.max_pos(value)
             end
         }
-        params:add {
-            type = "option",
-            id = "max_grains",
-            name = "max num grains",
-            options = options.max_grains,
-            default = 3, -- 256 grains
-            action = function(value)
-                local num = options.max_grains[value]
-                engine.max_grains(num)
-            end
-        }
         params:add_separator()
     end
+
+    params:add {
+        type = "option",
+        id = "max_grains",
+        name = "max num grains",
+        options = options.max_grains,
+        default = 3, -- 256 grains
+        action = function(value)
+            local num = options.max_grains[value]
+            engine.max_grains(num)
+        end
+    }
+    params:add_separator()
 
     controlspecs.wind = controlspec.new(0.05, 5, "lin", 0.01, 0.2)
     params:add {
