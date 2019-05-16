@@ -28,6 +28,8 @@ options.max_grains = {64, 128, 256, 512, 1024}
 
 local controlspecs = {}
 
+local audio_state = 1 -- 1 == normal, 2 == ducked, 3 == muted
+
 local function lerp(a, b, t)
     return a + (b - a) * t
 end
@@ -56,7 +58,7 @@ end
 function init()
     sp = StreamPool.new()
 
-    clock = metro.init(update, 1 / 20, -1)
+    clock = metro.init(update, 1 / 15, -1)
     clock:start()
 
     spawn_clock = metro.init(spawn, 0.1, -1)
@@ -223,6 +225,23 @@ end
 
 function key(n, z)
     arcify:handle_shift(n, z)
+    if (n == 3 and z == 1) then
+        if audio_state == 1 then
+            audio_state = 2
+        elseif audio_state == 2 then
+            audio_state = 3
+        else
+            audio_state = 1
+        end
+    end
+
+    if (audio_state == 3) then
+        audio.level_dac(0)
+    elseif (audio_state == 2) then
+        audio.level_dac(0.1)
+    else
+        audio.level_dac(0.8)
+    end
     redraw()
 end
 
